@@ -14,6 +14,7 @@ enum Team {
 @export var max_hp: int = 3
 @export var team: Team = Team.PLAYER
 @export var action: BaseAction
+@export var action_cost: int = 1
 
 var grid: Grid
 var cell: Vector2i

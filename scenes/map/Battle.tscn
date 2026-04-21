@@ -114,7 +114,7 @@ anchor_right = 1.0
 offset_left = -360.0
 offset_top = 12.0
 offset_right = -12.0
-offset_bottom = 172.0
+offset_bottom = 196.0
 
 [node name="TopVBox" type="VBoxContainer" parent="BattleHUD/Root/TopBar"]
 layout_mode = 2
@@ -123,6 +123,10 @@ theme_override_constants/separation = 4
 [node name="PhaseLabel" type="Label" parent="BattleHUD/Root/TopBar/TopVBox"]
 layout_mode = 2
 text = "Phase: PLAYER"
+
+[node name="CPLabel" type="Label" parent="BattleHUD/Root/TopBar/TopVBox"]
+layout_mode = 2
+text = "CP: 0/0"
 
 [node name="HPLabel" type="RichTextLabel" parent="BattleHUD/Root/TopBar/TopVBox"]
 layout_mode = 2

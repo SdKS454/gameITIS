@@ -4,6 +4,7 @@ class_name TurnManager
 signal phase_changed(new_phase: TurnPhase)
 signal enemy_intents_updated(plans: Array[Dictionary])
 signal turn_started(turn_index: int, phase: TurnPhase)
+signal command_points_changed(current: int, max: int)
 
 @export var unit_manager: UnitManager
 @export var movement_system: MovementSystem
@@ -11,6 +12,7 @@ signal turn_started(turn_index: int, phase: TurnPhase)
 @export var enemy_ai: EnemyAI
 @export var intent_visualizer: IntentVisualizer
 @export var battle_manager: BattleManager
+@export var cp_max: int = 1
 
 enum TurnPhase {
 	PLAYER_TURN,
@@ -20,12 +22,14 @@ enum TurnPhase {
 var phase: TurnPhase = TurnPhase.PLAYER_TURN
 var enemy_plans: Array[Dictionary] = []
 var turn_index: int = 1
+var cp_current: int = 0
 
 func _ready():
 	start_battle()
 
 func start_battle():
 	_reset_player_flags()
+	_reset_command_points()
 	_plan_enemy_intents()
 	phase = TurnPhase.PLAYER_TURN
 	phase_changed.emit(phase)
@@ -36,6 +40,25 @@ func can_accept_player_input() -> bool:
 
 func is_player_turn() -> bool:
 	return phase == TurnPhase.PLAYER_TURN
+
+func can_spend_cp(cost: int) -> bool:
+	if cost <= 0:
+		return true
+	if phase != TurnPhase.PLAYER_TURN:
+		return false
+	return cp_current >= cost
+
+func try_spend_cp(cost: int) -> bool:
+	if not can_spend_cp(cost):
+		return false
+	if cost <= 0:
+		return true
+
+	cp_current -= cost
+	if cp_current < 0:
+		cp_current = 0
+	command_points_changed.emit(cp_current, cp_max)
+	return true
 
 func end_player_turn():
 	if phase != TurnPhase.PLAYER_TURN:
@@ -51,6 +74,7 @@ func end_player_turn():
 
 	turn_index += 1
 	phase = TurnPhase.PLAYER_TURN
+	_reset_command_points()
 	phase_changed.emit(phase)
 	turn_started.emit(turn_index, phase)
 
@@ -97,6 +121,10 @@ func _reset_player_flags():
 		unit.reset_turn_flags()
 	for unit in unit_manager.get_units_by_team(Unit.Team.ENEMY):
 		unit.reset_turn_flags()
+
+func _reset_command_points():
+	cp_current = max(0, cp_max)
+	command_points_changed.emit(cp_current, cp_max)
 
 func refresh_enemy_intents_visuals():
 	if intent_visualizer != null:

@@ -30,15 +30,18 @@ func _init():
 	_assert(players.size() > 0, "Expected at least one player unit")
 	_assert(enemies.size() > 0, "Expected at least one enemy unit")
 
+	var initial_cp := turn_manager.cp_current
+	_assert(initial_cp == turn_manager.cp_max, "CP should reset to cp_max at player turn start")
+
 	var player: Unit = players[0]
 	battle_manager.select_unit(player)
 	_assert(battle_manager.action_cells.size() > 0, "Player should have available action targets")
 
-	# Execute one action to verify action/effect pipeline is connected.
 	var action_target: Vector2i = battle_manager.action_cells[0]
 	battle_manager.try_action_command(action_target)
 	await process_frame
 
+	_assert(turn_manager.cp_current == max(0, initial_cp - player.action_cost), "CP should be spent after successful action")
 	_assert(turn_manager.phase == TurnManager.TurnPhase.PLAYER_TURN, "TurnManager should return/stay in player phase after processing")
 
 	print("SMOKE_TEST_OK")

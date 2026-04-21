@@ -6,9 +6,10 @@ class_name BattleHUD
 @export var effect_resolver: EffectResolver
 @export var battle_manager: BattleManager
 
-@onready var phase_label: Label = $Root/TopBar/PhaseLabel
-@onready var hp_label: RichTextLabel = $Root/TopBar/HPLabel
-@onready var log_label: RichTextLabel = $Root/LogPanel/LogLabel
+@onready var phase_label: Label = $Root/TopBar/TopVBox/PhaseLabel
+@onready var cp_label: Label = $Root/TopBar/TopVBox/CPLabel
+@onready var hp_label: RichTextLabel = $Root/TopBar/TopVBox/HPLabel
+@onready var log_label: RichTextLabel = $Root/LogPanel/LogMargin/LogLabel
 
 const MAX_LOG_LINES := 12
 var log_lines: Array[String] = []
@@ -17,6 +18,7 @@ func _ready():
 	if turn_manager != null:
 		turn_manager.turn_started.connect(_on_turn_started)
 		turn_manager.phase_changed.connect(_on_phase_changed)
+		turn_manager.command_points_changed.connect(_on_command_points_changed)
 
 	if effect_resolver != null:
 		effect_resolver.damage_resolved.connect(_on_damage_resolved)
@@ -25,6 +27,7 @@ func _ready():
 
 	if battle_manager != null:
 		battle_manager.player_action_committed.connect(_on_player_action_committed)
+		battle_manager.player_action_denied.connect(_on_player_action_denied)
 
 	if unit_manager != null:
 		unit_manager.units_changed.connect(_refresh_hp_panel)
@@ -33,6 +36,7 @@ func _ready():
 	_refresh_hp_panel()
 	if turn_manager != null:
 		_on_phase_changed(turn_manager.phase)
+		_on_command_points_changed(turn_manager.cp_current, turn_manager.cp_max)
 		_append_log("Battle started")
 
 func _process(_delta):
@@ -68,6 +72,9 @@ func _team_icon(team: int) -> String:
 func _on_phase_changed(phase: TurnManager.TurnPhase):
 	phase_label.text = "Phase: %s" % _phase_text(phase)
 
+func _on_command_points_changed(current: int, max_points: int):
+	cp_label.text = "CP: %d/%d" % [current, max_points]
+
 func _on_turn_started(turn_idx: int, phase: TurnManager.TurnPhase):
 	_append_log("Turn %d -> %s" % [turn_idx, _phase_text(phase)])
 
@@ -78,6 +85,9 @@ func _phase_text(phase: TurnManager.TurnPhase) -> String:
 
 func _on_player_action_committed(unit: Unit, target_cell: Vector2i, action_id: String):
 	_append_log("%s used %s at %s" % [unit.get_team_label(), action_id, str(target_cell)])
+
+func _on_player_action_denied(unit: Unit, reason: String):
+	_append_log("%s %s action denied: %s" % [unit.get_team_label(), unit.name, reason])
 
 func _on_damage_resolved(attacker: Unit, target: Unit, amount: int, target_cell: Vector2i):
 	var attacker_name := "Environment"

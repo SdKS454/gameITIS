@@ -2,6 +2,7 @@ extends Node
 class_name BattleManager
 
 signal player_action_committed(unit: Unit, target_cell: Vector2i, action_id: String)
+signal player_action_denied(unit: Unit, reason: String)
 signal player_unit_selected(unit: Unit)
 
 @export var unit_manager: UnitManager
@@ -112,6 +113,11 @@ func try_action_command(cell: Vector2i):
 
 	var effects := selected_unit.action.build_effects(selected_unit, cell, grid, unit_manager)
 	if effects.is_empty():
+		return
+
+	var action_cost := max(0, selected_unit.action_cost)
+	if turn_manager != null and not turn_manager.try_spend_cp(action_cost):
+		player_action_denied.emit(selected_unit, "Not enough CP")
 		return
 
 	player_action_committed.emit(selected_unit, cell, selected_unit.action.id)
