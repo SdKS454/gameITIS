@@ -1,6 +1,9 @@
 extends Node
 class_name BattleManager
 
+signal player_action_committed(unit: Unit, target_cell: Vector2i, action_id: String)
+signal player_unit_selected(unit: Unit)
+
 @export var unit_manager: UnitManager
 @export var movement_system: MovementSystem
 @export var grid: Grid
@@ -50,6 +53,7 @@ func select_unit(unit: Unit):
 
 	selected_unit = unit
 	state = BattleState.UNIT_SELECTED
+	player_unit_selected.emit(unit)
 	refresh_selection()
 
 func refresh_selection():
@@ -110,6 +114,7 @@ func try_action_command(cell: Vector2i):
 	if effects.is_empty():
 		return
 
+	player_action_committed.emit(selected_unit, cell, selected_unit.action.id)
 	effect_resolver.resolve_effects(effects)
 	selected_unit.has_acted_this_turn = true
 	unit_manager.cleanup_dead_units()

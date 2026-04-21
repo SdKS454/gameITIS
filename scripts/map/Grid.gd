@@ -116,6 +116,22 @@ func clear_intents():
 func clear_all_highlights():
 	for tile in tiles.values():
 		tile.set_state(Tile.State.NORMAL)
+	refresh_ownership_visuals()
+
+func refresh_ownership_visuals():
+	for tile in tiles.values():
+		tile.clear_owner_team()
+
+	if unit_manager == null:
+		return
+
+	for unit in unit_manager.units:
+		if unit == null or unit.is_dead():
+			continue
+		var tile := get_tile(unit.cell)
+		if tile == null:
+			continue
+		tile.set_owner_team(unit.team)
 
 func setup_astar():
 	astar.region = Rect2i(Vector2i(0, 0), Vector2i(width, height))

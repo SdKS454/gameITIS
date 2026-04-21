@@ -2,6 +2,8 @@ extends Node2D
 class_name Unit
 
 signal move_finished(final_cell: Vector2i)
+signal health_changed(unit: Unit, old_hp: int, new_hp: int)
+signal died(unit: Unit)
 
 enum Team {
 	PLAYER,
@@ -80,7 +82,16 @@ func reset_turn_flags():
 	has_acted_this_turn = false
 
 func take_damage(amount: int):
-	hp -= amount
+	if amount <= 0:
+		return
+	var old_hp := hp
+	hp = max(0, hp - amount)
+	health_changed.emit(self, old_hp, hp)
+	if hp <= 0:
+		died.emit(self)
 
 func is_dead() -> bool:
 	return hp <= 0
+
+func get_team_label() -> String:
+	return "ALLY" if team == Team.PLAYER else "ENEMY"

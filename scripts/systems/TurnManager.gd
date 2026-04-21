@@ -3,6 +3,7 @@ class_name TurnManager
 
 signal phase_changed(new_phase: TurnPhase)
 signal enemy_intents_updated(plans: Array[Dictionary])
+signal turn_started(turn_index: int, phase: TurnPhase)
 
 @export var unit_manager: UnitManager
 @export var movement_system: MovementSystem
@@ -18,6 +19,7 @@ enum TurnPhase {
 
 var phase: TurnPhase = TurnPhase.PLAYER_TURN
 var enemy_plans: Array[Dictionary] = []
+var turn_index: int = 1
 
 func _ready():
 	start_battle()
@@ -27,6 +29,7 @@ func start_battle():
 	_plan_enemy_intents()
 	phase = TurnPhase.PLAYER_TURN
 	phase_changed.emit(phase)
+	turn_started.emit(turn_index, phase)
 
 func can_accept_player_input() -> bool:
 	return phase == TurnPhase.PLAYER_TURN
@@ -40,13 +43,16 @@ func end_player_turn():
 
 	phase = TurnPhase.ENEMY_EXECUTION
 	phase_changed.emit(phase)
+	turn_started.emit(turn_index, phase)
 
 	_execute_enemy_turn()
 	_reset_player_flags()
 	_plan_enemy_intents()
 
+	turn_index += 1
 	phase = TurnPhase.PLAYER_TURN
 	phase_changed.emit(phase)
+	turn_started.emit(turn_index, phase)
 
 func notify_player_unit_finished(_unit: Unit):
 	if not _all_player_units_spent():
@@ -91,7 +97,6 @@ func _reset_player_flags():
 		unit.reset_turn_flags()
 	for unit in unit_manager.get_units_by_team(Unit.Team.ENEMY):
 		unit.reset_turn_flags()
-
 
 func refresh_enemy_intents_visuals():
 	if intent_visualizer != null:

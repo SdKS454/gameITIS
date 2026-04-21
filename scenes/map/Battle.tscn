@@ -13,6 +13,7 @@
 [ext_resource type="Script" path="res://scripts/systems/EffectResolver.gd" id="11_res"]
 [ext_resource type="Script" path="res://scripts/systems/IntentVisualizer.gd" id="12_vis"]
 [ext_resource type="Script" path="res://scripts/systems/EnvironmentManager.gd" id="13_env"]
+[ext_resource type="Script" path="res://scripts/ui/BattleHUD.gd" id="14_hud"]
 
 [node name="Battle" type="Node2D" unique_id=1435354891]
 
@@ -88,3 +89,69 @@ battle_manager = NodePath("../BattleManager")
 turn_manager = NodePath("../TurnManager")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1004421333]
+
+[node name="BattleHUD" type="CanvasLayer" parent="." node_paths=PackedStringArray("unit_manager", "turn_manager", "effect_resolver", "battle_manager")]
+script = ExtResource("14_hud")
+unit_manager = NodePath("../GridRoot/UnitManager")
+turn_manager = NodePath("../GridRoot/TurnManager")
+effect_resolver = NodePath("../GridRoot/EffectResolver")
+battle_manager = NodePath("../GridRoot/BattleManager")
+
+[node name="Root" type="Control" parent="BattleHUD"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopBar" type="PanelContainer" parent="BattleHUD/Root"]
+layout_mode = 1
+anchors_preset = 10
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -360.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = 172.0
+
+[node name="TopVBox" type="VBoxContainer" parent="BattleHUD/Root/TopBar"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="PhaseLabel" type="Label" parent="BattleHUD/Root/TopBar/TopVBox"]
+layout_mode = 2
+text = "Phase: PLAYER"
+
+[node name="HPLabel" type="RichTextLabel" parent="BattleHUD/Root/TopBar/TopVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(320, 120)
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+
+[node name="LogPanel" type="PanelContainer" parent="BattleHUD/Root"]
+layout_mode = 1
+anchors_preset = 9
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -420.0
+offset_top = -220.0
+offset_right = -12.0
+offset_bottom = -12.0
+
+[node name="LogMargin" type="MarginContainer" parent="BattleHUD/Root/LogPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="LogLabel" type="RichTextLabel" parent="BattleHUD/Root/LogPanel/LogMargin"]
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+scroll_active = true
