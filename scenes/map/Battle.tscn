@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://scripts/systems/IntentVisualizer.gd" id="12_vis"]
 [ext_resource type="Script" path="res://scripts/systems/EnvironmentManager.gd" id="13_env"]
 [ext_resource type="Script" path="res://scripts/ui/BattleHUD.gd" id="14_hud"]
+[ext_resource type="Texture2D" uid="uid://7nuv5ng7eu3g" path="res://assets/sprites/tiles/tile_128x64.png" id="15_objtex"]
 
 [node name="Battle" type="Node2D" unique_id=1435354891]
 
@@ -37,6 +38,13 @@ z_index = 101
 visible = false
 z_index = 102
 
+[node name="ObjectiveMarker" type="Node2D" parent="GridRoot/Grid"]
+z_index = 99
+
+[node name="Sprite2D" type="Sprite2D" parent="GridRoot/Grid/ObjectiveMarker"]
+modulate = Color(0.9, 0.5, 1, 0.65)
+texture = ExtResource("15_objtex")
+
 [node name="UnitManager" parent="GridRoot" unique_id=188568835 node_paths=PackedStringArray("grid", "units_parent") instance=ExtResource("5_37gw2")]
 grid = NodePath("../Grid")
 units_parent = NodePath("../Units")
@@ -53,8 +61,10 @@ grid = NodePath("../Grid")
 unit_manager = NodePath("../UnitManager")
 battle_manager = NodePath("../BattleManager")
 
-[node name="EnvironmentManager" type="Node" parent="GridRoot" unique_id=120000001]
+[node name="EnvironmentManager" type="Node" parent="GridRoot" unique_id=120000001 node_paths=PackedStringArray("grid", "objective_marker")]
 script = ExtResource("13_env")
+grid = NodePath("../Grid")
+objective_marker = NodePath("../Grid/ObjectiveMarker")
 
 [node name="EffectResolver" type="Node" parent="GridRoot" unique_id=120000002 node_paths=PackedStringArray("grid", "unit_manager", "environment_manager")]
 script = ExtResource("11_res")
@@ -71,7 +81,7 @@ unit_manager = NodePath("../UnitManager")
 script = ExtResource("12_vis")
 grid = NodePath("../Grid")
 
-[node name="TurnManager" type="Node" parent="GridRoot" unique_id=120000005 node_paths=PackedStringArray("unit_manager", "movement_system", "effect_resolver", "enemy_ai", "intent_visualizer", "battle_manager")]
+[node name="TurnManager" type="Node" parent="GridRoot" unique_id=120000005 node_paths=PackedStringArray("unit_manager", "movement_system", "effect_resolver", "enemy_ai", "intent_visualizer", "battle_manager", "environment_manager")]
 script = ExtResource("9_turn")
 unit_manager = NodePath("../UnitManager")
 movement_system = NodePath("../MovementSystem")
@@ -79,6 +89,7 @@ effect_resolver = NodePath("../EffectResolver")
 enemy_ai = NodePath("../EnemyAI")
 intent_visualizer = NodePath("../IntentVisualizer")
 battle_manager = NodePath("../BattleManager")
+environment_manager = NodePath("../EnvironmentManager")
 
 [node name="SelectionController" type="Node2D" parent="GridRoot" unique_id=1843373962 node_paths=PackedStringArray("camera", "grid", "unit_manager", "battle_manager", "turn_manager")]
 script = ExtResource("3_c8xc1")
@@ -90,12 +101,13 @@ turn_manager = NodePath("../TurnManager")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1004421333]
 
-[node name="BattleHUD" type="CanvasLayer" parent="." node_paths=PackedStringArray("unit_manager", "turn_manager", "effect_resolver", "battle_manager")]
+[node name="BattleHUD" type="CanvasLayer" parent="." node_paths=PackedStringArray("unit_manager", "turn_manager", "effect_resolver", "battle_manager", "environment_manager")]
 script = ExtResource("14_hud")
 unit_manager = NodePath("../GridRoot/UnitManager")
 turn_manager = NodePath("../GridRoot/TurnManager")
 effect_resolver = NodePath("../GridRoot/EffectResolver")
 battle_manager = NodePath("../GridRoot/BattleManager")
+environment_manager = NodePath("../GridRoot/EnvironmentManager")
 
 [node name="Root" type="Control" parent="BattleHUD"]
 layout_mode = 3
@@ -114,7 +126,7 @@ anchor_right = 1.0
 offset_left = -360.0
 offset_top = 12.0
 offset_right = -12.0
-offset_bottom = 196.0
+offset_bottom = 242.0
 
 [node name="TopVBox" type="VBoxContainer" parent="BattleHUD/Root/TopBar"]
 layout_mode = 2
@@ -127,6 +139,14 @@ text = "Phase: PLAYER"
 [node name="CPLabel" type="Label" parent="BattleHUD/Root/TopBar/TopVBox"]
 layout_mode = 2
 text = "CP: 0/0"
+
+[node name="ThreatLabel" type="Label" parent="BattleHUD/Root/TopBar/TopVBox"]
+layout_mode = 2
+text = "Threat: 0"
+
+[node name="ObjectiveLabel" type="Label" parent="BattleHUD/Root/TopBar/TopVBox"]
+layout_mode = 2
+text = "Objective (0, 0) HP: 0/0"
 
 [node name="HPLabel" type="RichTextLabel" parent="BattleHUD/Root/TopBar/TopVBox"]
 layout_mode = 2

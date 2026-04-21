@@ -5,6 +5,8 @@ signal phase_changed(new_phase: TurnPhase)
 signal enemy_intents_updated(plans: Array[Dictionary])
 signal turn_started(turn_index: int, phase: TurnPhase)
 signal command_points_changed(current: int, max: int)
+signal threat_changed(level: int)
+signal battle_failed(reason: String)
 
 @export var unit_manager: UnitManager
 @export var movement_system: MovementSystem
@@ -12,7 +14,11 @@ signal command_points_changed(current: int, max: int)
 @export var enemy_ai: EnemyAI
 @export var intent_visualizer: IntentVisualizer
 @export var battle_manager: BattleManager
+@export var environment_manager: EnvironmentManager
+
 @export var cp_max: int = 1
+@export var threat_growth_per_turn: int = 1
+@export var threat_objective_focus_start: int = 2
 
 enum TurnPhase {
 	PLAYER_TURN,
@@ -23,11 +29,18 @@ var phase: TurnPhase = TurnPhase.PLAYER_TURN
 var enemy_plans: Array[Dictionary] = []
 var turn_index: int = 1
 var cp_current: int = 0
+var threat_level: int = 0
+var is_battle_over: bool = false
 
 func _ready():
+	if environment_manager != null:
+		environment_manager.objective_destroyed.connect(_on_objective_destroyed)
 	start_battle()
 
 func start_battle():
+	is_battle_over = false
+	threat_level = 0
+	threat_changed.emit(threat_level)
 	_reset_player_flags()
 	_reset_command_points()
 	_plan_enemy_intents()
@@ -36,7 +49,7 @@ func start_battle():
 	turn_started.emit(turn_index, phase)
 
 func can_accept_player_input() -> bool:
-	return phase == TurnPhase.PLAYER_TURN
+	return phase == TurnPhase.PLAYER_TURN and not is_battle_over
 
 func is_player_turn() -> bool:
 	return phase == TurnPhase.PLAYER_TURN
@@ -44,7 +57,7 @@ func is_player_turn() -> bool:
 func can_spend_cp(cost: int) -> bool:
 	if cost <= 0:
 		return true
-	if phase != TurnPhase.PLAYER_TURN:
+	if phase != TurnPhase.PLAYER_TURN or is_battle_over:
 		return false
 	return cp_current >= cost
 
@@ -61,7 +74,7 @@ func try_spend_cp(cost: int) -> bool:
 	return true
 
 func end_player_turn():
-	if phase != TurnPhase.PLAYER_TURN:
+	if phase != TurnPhase.PLAYER_TURN or is_battle_over:
 		return
 
 	phase = TurnPhase.ENEMY_EXECUTION
@@ -69,7 +82,11 @@ func end_player_turn():
 	turn_started.emit(turn_index, phase)
 
 	_execute_enemy_turn()
+	if is_battle_over:
+		return
+
 	_reset_player_flags()
+	_increase_threat()
 	_plan_enemy_intents()
 
 	turn_index += 1
@@ -99,6 +116,9 @@ func _execute_enemy_turn():
 	_sanitize_enemy_plans()
 
 	for plan in enemy_plans:
+		if is_battle_over:
+			return
+
 		var unit: Unit = plan.get("unit", null)
 		if not _is_unit_alive(unit):
 			continue
@@ -138,15 +158,31 @@ func _reset_command_points():
 	cp_current = max(0, cp_max)
 	command_points_changed.emit(cp_current, cp_max)
 
+func _increase_threat():
+	threat_level += max(0, threat_growth_per_turn)
+	threat_changed.emit(threat_level)
+
 func refresh_enemy_intents_visuals():
 	_sanitize_enemy_plans()
 	if intent_visualizer != null:
 		intent_visualizer.show_enemy_intents(enemy_plans)
 
 func _plan_enemy_intents():
+	var objective_state := {
+		"cell": Vector2i(-1, -1),
+		"hp": 0,
+		"max_hp": 0,
+		"alive": false
+	}
+	if environment_manager != null:
+		objective_state = environment_manager.get_objective_state()
+
 	enemy_plans = enemy_ai.plan_enemy_turn(
 		unit_manager.get_units_by_team(Unit.Team.ENEMY),
-		unit_manager.get_units_by_team(Unit.Team.PLAYER)
+		unit_manager.get_units_by_team(Unit.Team.PLAYER),
+		objective_state,
+		threat_level,
+		threat_objective_focus_start
 	)
 	_sanitize_enemy_plans()
 	if intent_visualizer != null:
@@ -163,6 +199,13 @@ func _sanitize_enemy_plans():
 
 func _is_unit_alive(unit: Unit) -> bool:
 	return unit != null and is_instance_valid(unit) and not unit.is_queued_for_deletion() and not unit.is_dead()
+
+func _on_objective_destroyed(_cell: Vector2i):
+	if is_battle_over:
+		return
+	is_battle_over = true
+	phase_changed.emit(phase)
+	battle_failed.emit("Objective destroyed")
 
 func grid_safe_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	var path := battle_manager.grid.find_path(from, to)

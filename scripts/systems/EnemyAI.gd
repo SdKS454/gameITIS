@@ -4,43 +4,78 @@ class_name EnemyAI
 @export var grid: Grid
 @export var unit_manager: UnitManager
 
-func plan_enemy_turn(enemy_units: Array[Unit], player_units: Array[Unit]) -> Array[Dictionary]:
+func plan_enemy_turn(
+	enemy_units: Array[Unit],
+	player_units: Array[Unit],
+	objective_state: Dictionary,
+	threat_level: int,
+	focus_threshold: int
+) -> Array[Dictionary]:
 	var plans: Array[Dictionary] = []
 	for enemy in enemy_units:
 		if enemy == null or not is_instance_valid(enemy) or enemy.is_dead():
 			continue
-		var plan := _build_plan_for_enemy(enemy, player_units)
+		var plan := _build_plan_for_enemy(enemy, player_units, objective_state, threat_level, focus_threshold)
 		plans.append(plan)
 	return plans
 
-func _build_plan_for_enemy(enemy: Unit, player_units: Array[Unit]) -> Dictionary:
-	if player_units.is_empty():
-		return {
-			"unit": enemy,
-			"move_to": enemy.cell,
-			"action": enemy.action,
-			"target_cell": enemy.cell,
-			"preview_cells": []
-		}
+func _build_plan_for_enemy(
+	enemy: Unit,
+	player_units: Array[Unit],
+	objective_state: Dictionary,
+	threat_level: int,
+	focus_threshold: int
+) -> Dictionary:
+	var target_cell := enemy.cell
+	var target_mode := "idle"
 
-	var target := _find_closest(enemy, player_units)
-	var move_to := _pick_move_cell(enemy, target.cell)
-	var target_cell := target.cell
+	if _should_focus_objective(enemy, objective_state, player_units, threat_level, focus_threshold):
+		target_cell = objective_state.get("cell", enemy.cell)
+		target_mode = "objective"
+	elif not player_units.is_empty():
+		var target_player := _find_closest(enemy, player_units)
+		target_cell = target_player.cell
+		target_mode = "player"
 
-	if target.cell not in grid.get_neighbor_coords(move_to):
-		var fallback := move_to + _best_step_towards(move_to, target.cell)
+	var move_to := _pick_move_cell(enemy, target_cell)
+	var action_target := target_cell
+
+	if target_cell not in grid.get_neighbor_coords(move_to):
+		var fallback := move_to + _best_step_towards(move_to, target_cell)
 		if grid.is_in_bounds(fallback):
-			target_cell = fallback
+			action_target = fallback
 
-	var preview := _build_preview_cells(target_cell)
+	var preview := _build_preview_cells(action_target)
 
 	return {
 		"unit": enemy,
 		"move_to": move_to,
 		"action": enemy.action,
-		"target_cell": target_cell,
-		"preview_cells": preview
+		"target_cell": action_target,
+		"preview_cells": preview,
+		"target_mode": target_mode
 	}
+
+func _should_focus_objective(
+	enemy: Unit,
+	objective_state: Dictionary,
+	player_units: Array[Unit],
+	threat_level: int,
+	focus_threshold: int
+) -> bool:
+	if threat_level < focus_threshold:
+		return false
+	if not objective_state.get("alive", false):
+		return false
+
+	var objective_cell: Vector2i = objective_state.get("cell", enemy.cell)
+	var objective_dist := enemy.cell.distance_to(objective_cell)
+	if player_units.is_empty():
+		return true
+
+	var closest_player := _find_closest(enemy, player_units)
+	var player_dist := enemy.cell.distance_to(closest_player.cell)
+	return objective_dist <= player_dist + 1.0
 
 func _pick_move_cell(enemy: Unit, target_cell: Vector2i) -> Vector2i:
 	var path := grid.find_path(enemy.cell, target_cell)

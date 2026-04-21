@@ -5,9 +5,12 @@ class_name BattleHUD
 @export var turn_manager: TurnManager
 @export var effect_resolver: EffectResolver
 @export var battle_manager: BattleManager
+@export var environment_manager: EnvironmentManager
 
 @onready var phase_label: Label = $Root/TopBar/TopVBox/PhaseLabel
 @onready var cp_label: Label = $Root/TopBar/TopVBox/CPLabel
+@onready var threat_label: Label = $Root/TopBar/TopVBox/ThreatLabel
+@onready var objective_label: Label = $Root/TopBar/TopVBox/ObjectiveLabel
 @onready var hp_label: RichTextLabel = $Root/TopBar/TopVBox/HPLabel
 @onready var log_label: RichTextLabel = $Root/LogPanel/LogMargin/LogLabel
 
@@ -19,6 +22,12 @@ func _ready():
 		turn_manager.turn_started.connect(_on_turn_started)
 		turn_manager.phase_changed.connect(_on_phase_changed)
 		turn_manager.command_points_changed.connect(_on_command_points_changed)
+		turn_manager.threat_changed.connect(_on_threat_changed)
+		turn_manager.battle_failed.connect(_on_battle_failed)
+
+	if environment_manager != null:
+		environment_manager.objective_updated.connect(_on_objective_updated)
+		environment_manager.objective_destroyed.connect(_on_objective_destroyed)
 
 	if effect_resolver != null:
 		effect_resolver.damage_resolved.connect(_on_damage_resolved)
@@ -37,7 +46,11 @@ func _ready():
 	if turn_manager != null:
 		_on_phase_changed(turn_manager.phase)
 		_on_command_points_changed(turn_manager.cp_current, turn_manager.cp_max)
-		_append_log("Battle started")
+		_on_threat_changed(turn_manager.threat_level)
+	if environment_manager != null:
+		var obj := environment_manager.get_objective_state()
+		_on_objective_updated(obj["hp"], obj["max_hp"], obj["cell"])
+	_append_log("Battle started")
 
 func _process(_delta):
 	_refresh_hp_panel()
@@ -74,6 +87,12 @@ func _on_phase_changed(phase: TurnManager.TurnPhase):
 
 func _on_command_points_changed(current: int, max_points: int):
 	cp_label.text = "CP: %d/%d" % [current, max_points]
+
+func _on_threat_changed(level: int):
+	threat_label.text = "Threat: %d" % level
+
+func _on_objective_updated(current_hp: int, max_hp: int, cell: Vector2i):
+	objective_label.text = "Objective %s HP: %d/%d" % [str(cell), current_hp, max_hp]
 
 func _on_turn_started(turn_idx: int, phase: TurnManager.TurnPhase):
 	_append_log("Turn %d -> %s" % [turn_idx, _phase_text(phase)])
@@ -112,6 +131,12 @@ func _on_push_resolved(target: Unit, from_cell: Vector2i, to_cell: Vector2i):
 		str(from_cell),
 		str(to_cell)
 	])
+
+func _on_objective_destroyed(cell: Vector2i):
+	_append_log("Objective at %s destroyed" % str(cell))
+
+func _on_battle_failed(reason: String):
+	_append_log("MISSION FAILED: %s" % reason)
 
 func _append_log(message: String):
 	log_lines.append(message)
