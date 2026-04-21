@@ -96,25 +96,37 @@ func _all_player_units_spent() -> bool:
 	return true
 
 func _execute_enemy_turn():
+	_sanitize_enemy_plans()
+
 	for plan in enemy_plans:
 		var unit: Unit = plan.get("unit", null)
-		if unit == null or unit.is_dead():
+		if not _is_unit_alive(unit):
 			continue
 
 		var move_to: Vector2i = plan.get("move_to", unit.cell)
 		if move_to != unit.cell and not unit_manager.is_occupied(move_to):
 			var path := grid_safe_path(unit.cell, move_to)
-			if not path.is_empty():
+			if not path.is_empty() and _is_unit_alive(unit):
 				movement_system.move_unit_instant(unit, path)
+
+		if not _is_unit_alive(unit):
+			continue
 
 		var action: BaseAction = plan.get("action", null)
 		var target_cell: Vector2i = plan.get("target_cell", unit.cell)
-		if action != null and unit.can_act_this_turn():
-			var effects := action.build_effects(unit, target_cell, battle_manager.grid, unit_manager)
-			effect_resolver.resolve_effects(effects)
+		if action == null or not unit.can_act_this_turn():
+			continue
+
+		var effects := action.build_effects(unit, target_cell, battle_manager.grid, unit_manager)
+		if effects.is_empty():
+			continue
+
+		effect_resolver.resolve_effects(effects)
+		if _is_unit_alive(unit):
 			unit.has_acted_this_turn = true
 
 	unit_manager.cleanup_dead_units()
+	_sanitize_enemy_plans()
 
 func _reset_player_flags():
 	for unit in unit_manager.get_units_by_team(Unit.Team.PLAYER):
@@ -127,6 +139,7 @@ func _reset_command_points():
 	command_points_changed.emit(cp_current, cp_max)
 
 func refresh_enemy_intents_visuals():
+	_sanitize_enemy_plans()
 	if intent_visualizer != null:
 		intent_visualizer.show_enemy_intents(enemy_plans)
 
@@ -135,9 +148,21 @@ func _plan_enemy_intents():
 		unit_manager.get_units_by_team(Unit.Team.ENEMY),
 		unit_manager.get_units_by_team(Unit.Team.PLAYER)
 	)
+	_sanitize_enemy_plans()
 	if intent_visualizer != null:
 		intent_visualizer.show_enemy_intents(enemy_plans)
 	enemy_intents_updated.emit(enemy_plans)
+
+func _sanitize_enemy_plans():
+	var filtered: Array[Dictionary] = []
+	for plan in enemy_plans:
+		var unit: Unit = plan.get("unit", null)
+		if _is_unit_alive(unit):
+			filtered.append(plan)
+	enemy_plans = filtered
+
+func _is_unit_alive(unit: Unit) -> bool:
+	return unit != null and is_instance_valid(unit) and not unit.is_queued_for_deletion() and not unit.is_dead()
 
 func grid_safe_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	var path := battle_manager.grid.find_path(from, to)
