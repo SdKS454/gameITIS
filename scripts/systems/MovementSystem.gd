@@ -5,38 +5,34 @@ class_name MovementSystem
 @export var unit_manager: UnitManager
 @export var battle_manager: BattleManager
 
-func move_unit(unit: Unit, target_cell: Vector2i):
+func move_unit(unit: Unit, target_cell: Vector2i, on_finished: Callable = Callable(), notify_battle_manager: bool = true) -> bool:
 	if not grid.is_in_bounds(target_cell):
-		return
+		return false
 	if unit_manager.is_occupied(target_cell):
-		return
+		return false
 	if not unit.can_move_this_turn():
-		return
+		return false
 
 	var path := grid.find_path(unit.cell, target_cell)
 	if path.is_empty():
-		return
+		return false
 
 	var limited_path := _apply_move_limit(unit, path)
 	if limited_path.is_empty():
-		return
+		return false
 
 	var start_cell := unit.cell
 	unit.move_along_path(limited_path)
 
 	unit.move_finished.connect(func(final_cell):
 		unit_manager.on_unit_moved(unit, start_cell, final_cell)
-		battle_manager.on_unit_move_finished()
+		if notify_battle_manager and battle_manager != null:
+			battle_manager.on_unit_move_finished()
+		if on_finished.is_valid():
+			on_finished.call(final_cell)
 	, CONNECT_ONE_SHOT)
 
-func move_unit_instant(unit: Unit, path: Array[Vector2i]):
-	if path.is_empty():
-		return
-	var start := unit.cell
-	var final := path[path.size() - 1]
-	unit.set_cell(final)
-	unit.has_moved_this_turn = true
-	unit_manager.on_unit_moved(unit, start, final)
+	return true
 
 func _apply_move_limit(unit: Unit, path: Array[Vector2i]) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []

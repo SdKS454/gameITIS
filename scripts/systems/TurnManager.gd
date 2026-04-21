@@ -81,7 +81,7 @@ func end_player_turn():
 	phase_changed.emit(phase)
 	turn_started.emit(turn_index, phase)
 
-	_execute_enemy_turn()
+	await _execute_enemy_turn()
 	if is_battle_over:
 		return
 
@@ -125,9 +125,9 @@ func _execute_enemy_turn():
 
 		var move_to: Vector2i = plan.get("move_to", unit.cell)
 		if move_to != unit.cell and not unit_manager.is_occupied(move_to):
-			var path := grid_safe_path(unit.cell, move_to)
-			if not path.is_empty() and _is_unit_alive(unit):
-				movement_system.move_unit_instant(unit, path)
+			var moved := movement_system.move_unit(unit, move_to, Callable(), false)
+			if moved:
+				await unit.move_finished
 
 		if not _is_unit_alive(unit):
 			continue

@@ -3,6 +3,7 @@ class_name EnemyAI
 
 @export var grid: Grid
 @export var unit_manager: UnitManager
+@export var objective_focus_radius: int = 6
 
 func plan_enemy_turn(
 	enemy_units: Array[Unit],
@@ -37,7 +38,8 @@ func _build_plan_for_enemy(
 		target_cell = target_player.cell
 		target_mode = "player"
 
-	var move_to := _pick_move_cell(enemy, target_cell)
+	var stop_before_target := target_mode == "objective"
+	var move_to := _pick_move_cell(enemy, target_cell, stop_before_target)
 	var action_target := target_cell
 
 	if target_cell not in grid.get_neighbor_coords(move_to):
@@ -69,20 +71,28 @@ func _should_focus_objective(
 		return false
 
 	var objective_cell: Vector2i = objective_state.get("cell", enemy.cell)
-	var objective_dist := enemy.cell.distance_to(objective_cell)
+	var objective_dist := int(enemy.cell.distance_to(objective_cell))
+	if objective_dist > objective_focus_radius:
+		return false
+
 	if player_units.is_empty():
 		return true
 
 	var closest_player := _find_closest(enemy, player_units)
-	var player_dist := enemy.cell.distance_to(closest_player.cell)
-	return objective_dist <= player_dist + 1.0
+	var player_dist := int(enemy.cell.distance_to(closest_player.cell))
+	return objective_dist <= player_dist + 2
 
-func _pick_move_cell(enemy: Unit, target_cell: Vector2i) -> Vector2i:
+func _pick_move_cell(enemy: Unit, target_cell: Vector2i, stop_before_target: bool) -> Vector2i:
 	var path := grid.find_path(enemy.cell, target_cell)
 	if path.size() <= 1:
 		return enemy.cell
 
 	var max_step := min(enemy.move_range, path.size() - 1)
+	if stop_before_target:
+		max_step = min(max_step, path.size() - 2)
+	if max_step <= 0:
+		return enemy.cell
+
 	var best := enemy.cell
 	for step in range(1, max_step + 1):
 		var candidate := path[step]

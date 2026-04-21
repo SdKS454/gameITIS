@@ -91,6 +91,19 @@ func _init():
 	await process_frame
 	_assert(environment_manager.objective_hp == objective_hp_before - 1, "Objective HP should decrease after damage")
 
+
+	# --- Regression: enemy uses animated movement pipeline (not instant teleport).
+	_relocate_unit(unit_manager, obj_enemy, Vector2i(0, 9))
+	turn_manager.threat_level = max(turn_manager.threat_level, turn_manager.threat_objective_focus_start)
+	turn_manager._plan_enemy_intents()
+	var saw_enemy_moving := false
+	turn_manager.end_player_turn()
+	for _i in range(12):
+		await process_frame
+		if obj_enemy.is_moving:
+			saw_enemy_moving = true
+	_assert(saw_enemy_moving, "Enemy should use move animation pipeline (is_moving true during enemy turn)")
+
 	environment_manager.damage_objective(999)
 	await process_frame
 	_assert(not environment_manager.is_objective_alive(), "Objective should be destroyed")
