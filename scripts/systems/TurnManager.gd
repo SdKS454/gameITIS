@@ -7,6 +7,8 @@ signal turn_started(turn_index: int, phase: TurnPhase)
 signal command_points_changed(current: int, max: int)
 signal threat_changed(level: int)
 signal battle_failed(reason: String)
+signal weave_changed(uses_left: int, uses_max: int)
+signal intent_weaved(from_cell: Vector2i, to_cell: Vector2i)
 
 @export var unit_manager: UnitManager
 @export var movement_system: MovementSystem
@@ -19,6 +21,7 @@ signal battle_failed(reason: String)
 @export var cp_max: int = 1
 @export var threat_growth_per_turn: int = 1
 @export var threat_objective_focus_start: int = 2
+@export var weave_uses_per_turn: int = 1
 
 enum TurnPhase {
 	PLAYER_TURN,
@@ -31,6 +34,7 @@ var turn_index: int = 1
 var cp_current: int = 0
 var threat_level: int = 0
 var is_battle_over: bool = false
+var weave_uses_left: int = 0
 
 func _ready():
 	if environment_manager != null:
@@ -43,6 +47,7 @@ func start_battle():
 	threat_changed.emit(threat_level)
 	_reset_player_flags()
 	_reset_command_points()
+	_reset_weave_uses()
 	_plan_enemy_intents()
 	phase = TurnPhase.PLAYER_TURN
 	phase_changed.emit(phase)
@@ -73,6 +78,45 @@ func try_spend_cp(cost: int) -> bool:
 	command_points_changed.emit(cp_current, cp_max)
 	return true
 
+func can_weave_intent() -> bool:
+	return phase == TurnPhase.PLAYER_TURN and not is_battle_over and weave_uses_left > 0 and not enemy_plans.is_empty()
+
+func apply_intent_weave_at(cell: Vector2i) -> bool:
+	if not can_weave_intent():
+		return false
+
+	for i in range(enemy_plans.size()):
+		var plan: Dictionary = enemy_plans[i]
+		if plan.get("target_cell", Vector2i(-1, -1)) != cell:
+			continue
+
+		var to_cell := _find_weave_destination(cell)
+		if to_cell == cell:
+			return false
+
+		plan["target_cell"] = to_cell
+		plan["preview_cells"] = [to_cell]
+		enemy_plans[i] = plan
+		weave_uses_left -= 1
+		weave_changed.emit(weave_uses_left, weave_uses_per_turn)
+		intent_weaved.emit(cell, to_cell)
+		refresh_enemy_intents_visuals()
+		enemy_intents_updated.emit(enemy_plans)
+		return true
+
+	return false
+
+func _find_weave_destination(from_cell: Vector2i) -> Vector2i:
+	for n in battle_manager.grid.get_neighbor_coords(from_cell):
+		if not battle_manager.grid.is_in_bounds(n):
+			continue
+		if unit_manager.is_occupied(n):
+			continue
+		if environment_manager != null and environment_manager.is_objective_at(n):
+			continue
+		return n
+	return from_cell
+
 func end_player_turn():
 	if phase != TurnPhase.PLAYER_TURN or is_battle_over:
 		return
@@ -92,6 +136,7 @@ func end_player_turn():
 	turn_index += 1
 	phase = TurnPhase.PLAYER_TURN
 	_reset_command_points()
+	_reset_weave_uses()
 	phase_changed.emit(phase)
 	turn_started.emit(turn_index, phase)
 
@@ -157,6 +202,10 @@ func _reset_player_flags():
 func _reset_command_points():
 	cp_current = max(0, cp_max)
 	command_points_changed.emit(cp_current, cp_max)
+
+func _reset_weave_uses():
+	weave_uses_left = max(0, weave_uses_per_turn)
+	weave_changed.emit(weave_uses_left, weave_uses_per_turn)
 
 func _increase_threat():
 	threat_level += max(0, threat_growth_per_turn)

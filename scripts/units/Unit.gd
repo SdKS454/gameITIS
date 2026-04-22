@@ -22,6 +22,7 @@ var is_moving := false
 var hp: int = max_hp
 var has_moved_this_turn := false
 var has_acted_this_turn := false
+var _hit_flash_tween: Tween
 
 func _ready():
 	hp = max_hp
@@ -88,6 +89,7 @@ func take_damage(amount: int):
 	var old_hp := hp
 	hp = max(0, hp - amount)
 	health_changed.emit(self, old_hp, hp)
+	play_hit_flash()
 	if hp <= 0:
 		died.emit(self)
 
@@ -96,3 +98,16 @@ func is_dead() -> bool:
 
 func get_team_label() -> String:
 	return "ALLY" if team == Team.PLAYER else "ENEMY"
+
+
+func play_hit_flash():
+	var sprite: Sprite2D = $Visual/Sprite2D
+	if sprite == null:
+		return
+
+	if _hit_flash_tween != null:
+		_hit_flash_tween.kill()
+
+	sprite.modulate = Color(2.0, 2.0, 2.0, 1.0)
+	_hit_flash_tween = create_tween()
+	_hit_flash_tween.tween_property(sprite, "modulate", Color(1, 1, 1, 1), 0.12)

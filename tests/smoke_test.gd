@@ -19,12 +19,14 @@ func _init():
 	var turn_manager: TurnManager = grid_root.get_node("TurnManager")
 	var effect_resolver: EffectResolver = grid_root.get_node("EffectResolver")
 	var environment_manager: EnvironmentManager = grid_root.get_node("EnvironmentManager")
+	var battle_hud: BattleHUD = battle.get_node("BattleHUD")
 
 	_assert_not_null(unit_manager, "UnitManager should exist")
 	_assert_not_null(battle_manager, "BattleManager should exist")
 	_assert_not_null(turn_manager, "TurnManager should exist")
 	_assert_not_null(effect_resolver, "EffectResolver should exist")
 	_assert_not_null(environment_manager, "EnvironmentManager should exist")
+	_assert_not_null(battle_hud, "BattleHUD should exist")
 
 	turn_manager.battle_failed.connect(func(_reason): fail_signal_fired = true)
 
@@ -52,6 +54,13 @@ func _init():
 	turn_manager.end_player_turn()
 	await process_frame
 	_assert(player.hp < hp_before_enemy_turn, "Enemy should attack and reduce player HP")
+
+	# --- Hit flash should trigger on damage pipeline.
+	var sprite: Sprite2D = player.get_node("Visual/Sprite2D")
+	player.take_damage(1)
+	_assert(sprite.modulate.r > 1.0, "Hit flash should brighten sprite on damage")
+	await create_timer(0.2).timeout
+	_assert(abs(sprite.modulate.r - 1.0) < 0.05, "Hit flash should return sprite modulate to normal")
 
 	# --- Phase 2: threat grows by turns.
 	var threat_before := turn_manager.threat_level
@@ -83,6 +92,18 @@ func _init():
 			break
 	_assert(objective_target_found, "At least one enemy plan should target objective under threat")
 
+	# --- Phase 3: Intent weave should modify one intent and consume charge.
+	var weave_from := Vector2i(-1, -1)
+	for plan in turn_manager.enemy_plans:
+		if plan.get("target_mode", "") == "objective":
+			weave_from = plan.get("target_cell", Vector2i(-1, -1))
+			break
+	_assert(weave_from != Vector2i(-1, -1), "Need weavable intent source cell")
+	var weave_before := turn_manager.weave_uses_left
+	var weave_applied := turn_manager.apply_intent_weave_at(weave_from)
+	_assert(weave_applied, "Intent weave should apply on active intent cell")
+	_assert(turn_manager.weave_uses_left == weave_before - 1, "Weave use should be consumed")
+
 	# --- Phase 2: objective takes damage and mission fails on destruction.
 	var objective_hp_before := environment_manager.objective_hp
 	effect_resolver.resolve_effects([
@@ -90,7 +111,6 @@ func _init():
 	])
 	await process_frame
 	_assert(environment_manager.objective_hp == objective_hp_before - 1, "Objective HP should decrease after damage")
-
 
 	# --- Regression: enemy uses animated movement pipeline (not instant teleport).
 	_relocate_unit(unit_manager, obj_enemy, Vector2i(0, 9))
@@ -110,6 +130,7 @@ func _init():
 	_assert(turn_manager.is_battle_over, "TurnManager should mark battle as over on objective destruction")
 	_assert(fail_signal_fired, "Battle failed signal should fire when objective is destroyed")
 	_assert(not turn_manager.can_accept_player_input(), "Player input should be blocked after mission fail")
+	_assert(battle_hud.get_node("Root/FailOverlay").visible, "Fail notification overlay should be visible")
 
 	print("SMOKE_TEST_OK")
 	quit(0)

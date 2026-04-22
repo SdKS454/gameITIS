@@ -126,7 +126,7 @@ anchor_right = 1.0
 offset_left = -360.0
 offset_top = 12.0
 offset_right = -12.0
-offset_bottom = 242.0
+offset_bottom = 266.0
 
 [node name="TopVBox" type="VBoxContainer" parent="BattleHUD/Root/TopBar"]
 layout_mode = 2
@@ -139,6 +139,10 @@ text = "Phase: PLAYER"
 [node name="CPLabel" type="Label" parent="BattleHUD/Root/TopBar/TopVBox"]
 layout_mode = 2
 text = "CP: 0/0"
+
+[node name="WeaveLabel" type="Label" parent="BattleHUD/Root/TopBar/TopVBox"]
+layout_mode = 2
+text = "Weave: 0/0 (MMB)"
 
 [node name="ThreatLabel" type="Label" parent="BattleHUD/Root/TopBar/TopVBox"]
 layout_mode = 2
@@ -179,3 +183,22 @@ layout_mode = 2
 bbcode_enabled = true
 fit_content = true
 scroll_active = true
+
+[node name="FailOverlay" type="PanelContainer" parent="BattleHUD/Root"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -80.0
+offset_right = 220.0
+offset_bottom = 80.0
+
+[node name="FailLabel" type="Label" parent="BattleHUD/Root/FailOverlay"]
+layout_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "MISSION FAILED"
