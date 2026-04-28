@@ -108,6 +108,7 @@ func play_hit_flash():
 	if _hit_flash_tween != null:
 		_hit_flash_tween.kill()
 
-	sprite.modulate = Color(2.0, 2.0, 2.0, 1.0)
+	sprite.modulate = Color(2.2, 2.2, 2.2, 1.0)
 	_hit_flash_tween = create_tween()
-	_hit_flash_tween.tween_property(sprite, "modulate", Color(1, 1, 1, 1), 0.12)
+	_hit_flash_tween.tween_property(sprite, "modulate", Color(1.55, 1.55, 1.55, 1), 0.08)
+	_hit_flash_tween.tween_property(sprite, "modulate", Color(1, 1, 1, 1), 0.16)

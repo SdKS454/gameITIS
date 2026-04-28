@@ -101,13 +101,14 @@ turn_manager = NodePath("../TurnManager")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1004421333]
 
-[node name="BattleHUD" type="CanvasLayer" parent="." node_paths=PackedStringArray("unit_manager", "turn_manager", "effect_resolver", "battle_manager", "environment_manager")]
+[node name="BattleHUD" type="CanvasLayer" parent="." node_paths=PackedStringArray("unit_manager", "turn_manager", "effect_resolver", "battle_manager", "environment_manager", "selection_controller")]
 script = ExtResource("14_hud")
 unit_manager = NodePath("../GridRoot/UnitManager")
 turn_manager = NodePath("../GridRoot/TurnManager")
 effect_resolver = NodePath("../GridRoot/EffectResolver")
 battle_manager = NodePath("../GridRoot/BattleManager")
 environment_manager = NodePath("../GridRoot/EnvironmentManager")
+selection_controller = NodePath("../GridRoot/SelectionController")
 
 [node name="Root" type="Control" parent="BattleHUD"]
 layout_mode = 3
@@ -143,6 +144,18 @@ text = "CP: 0/0"
 [node name="WeaveLabel" type="Label" parent="BattleHUD/Root/TopBar/TopVBox"]
 layout_mode = 2
 text = "Weave: 0/0 (MMB)"
+
+[node name="WeaveHelpLabel" type="Label" parent="BattleHUD/Root/TopBar/TopVBox"]
+layout_mode = 2
+text = "Weave: shift one enemy intent by 1 tile"
+
+[node name="WeaveModeLabel" type="Label" parent="BattleHUD/Root/TopBar/TopVBox"]
+layout_mode = 2
+text = "WEAVE MODE: OFF"
+
+[node name="WeavePreviewLabel" type="Label" parent="BattleHUD/Root/TopBar/TopVBox"]
+layout_mode = 2
+text = "Weave preview: hover an intent tile"
 
 [node name="ThreatLabel" type="Label" parent="BattleHUD/Root/TopBar/TopVBox"]
 layout_mode = 2

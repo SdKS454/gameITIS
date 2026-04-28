@@ -81,6 +81,45 @@ func try_spend_cp(cost: int) -> bool:
 func can_weave_intent() -> bool:
 	return phase == TurnPhase.PLAYER_TURN and not is_battle_over and weave_uses_left > 0 and not enemy_plans.is_empty()
 
+func get_weave_unavailable_reason() -> String:
+	if phase != TurnPhase.PLAYER_TURN:
+		return "Weave is only available during PLAYER phase"
+	if is_battle_over:
+		return "Battle is over"
+	if weave_uses_left <= 0:
+		return "No weave charges left this turn"
+	if enemy_plans.is_empty():
+		return "No enemy intents available"
+	return ""
+
+func get_weave_preview(cell: Vector2i) -> Dictionary:
+	var result := {
+		"valid": false,
+		"from_cell": cell,
+		"to_cell": cell,
+		"reason": ""
+	}
+
+	var unavailable_reason := get_weave_unavailable_reason()
+	if unavailable_reason != "":
+		result["reason"] = unavailable_reason
+		return result
+
+	for plan in enemy_plans:
+		var target_cell: Vector2i = plan.get("target_cell", Vector2i(-1, -1))
+		if target_cell != cell:
+			continue
+		var to_cell := _find_weave_destination(cell)
+		if to_cell == cell:
+			result["reason"] = "Intent cannot shift: all adjacent cells are blocked"
+			return result
+		result["valid"] = true
+		result["to_cell"] = to_cell
+		return result
+
+	result["reason"] = "Hover an enemy intent tile to weave"
+	return result
+
 func apply_intent_weave_at(cell: Vector2i) -> bool:
 	if not can_weave_intent():
 		return false

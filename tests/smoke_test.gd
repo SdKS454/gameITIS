@@ -59,7 +59,7 @@ func _init():
 	var sprite: Sprite2D = player.get_node("Visual/Sprite2D")
 	player.take_damage(1)
 	_assert(sprite.modulate.r > 1.0, "Hit flash should brighten sprite on damage")
-	await create_timer(0.2).timeout
+	await create_timer(0.3).timeout
 	_assert(abs(sprite.modulate.r - 1.0) < 0.05, "Hit flash should return sprite modulate to normal")
 
 	# --- Phase 2: threat grows by turns.
@@ -100,9 +100,13 @@ func _init():
 			break
 	_assert(weave_from != Vector2i(-1, -1), "Need weavable intent source cell")
 	var weave_before := turn_manager.weave_uses_left
+	var weave_preview := turn_manager.get_weave_preview(weave_from)
+	_assert(weave_preview.get("valid", false), "Weave preview should be valid on active intent tile")
 	var weave_applied := turn_manager.apply_intent_weave_at(weave_from)
 	_assert(weave_applied, "Intent weave should apply on active intent cell")
 	_assert(turn_manager.weave_uses_left == weave_before - 1, "Weave use should be consumed")
+	turn_manager.weave_uses_left = 0
+	_assert(turn_manager.get_weave_unavailable_reason() != "", "Unavailable weave reason should be provided")
 
 	# --- Phase 2: objective takes damage and mission fails on destruction.
 	var objective_hp_before := environment_manager.objective_hp
