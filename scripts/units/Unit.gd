@@ -10,11 +10,21 @@ enum Team {
 	ENEMY
 }
 
+enum Archetype {
+	STRIKER,
+	GUARDIAN,
+	ARTILLERY,
+	BRUTE,
+	RAIDER,
+	SNIPER
+}
+
 @export var move_range: int = 3
 @export var max_hp: int = 3
 @export var team: Team = Team.PLAYER
 @export var action: BaseAction
 @export var action_cost: int = 1
+@export var archetype: Archetype = Archetype.STRIKER
 
 var grid: Grid
 var cell: Vector2i

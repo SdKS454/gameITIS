@@ -30,22 +30,17 @@ func _build_plan_for_enemy(
 	var target_cell := enemy.cell
 	var target_mode := "idle"
 
-	if _should_focus_objective(enemy, objective_state, player_units, threat_level, focus_threshold):
+	if enemy.archetype == Unit.Archetype.GUARDIAN or _should_focus_objective(enemy, objective_state, player_units, threat_level, focus_threshold):
 		target_cell = objective_state.get("cell", enemy.cell)
 		target_mode = "objective"
 	elif not player_units.is_empty():
-		var target_player := _find_closest(enemy, player_units)
+		var target_player := _pick_target_player(enemy, player_units)
 		target_cell = target_player.cell
 		target_mode = "player"
 
 	var stop_before_target := target_mode == "objective"
 	var move_to := _pick_move_cell(enemy, target_cell, stop_before_target)
-	var action_target := target_cell
-
-	if target_cell not in grid.get_neighbor_coords(move_to):
-		var fallback := move_to + _best_step_towards(move_to, target_cell)
-		if grid.is_in_bounds(fallback):
-			action_target = fallback
+	var action_target := _pick_action_target(enemy, move_to, target_cell, target_mode)
 
 	var preview := _build_preview_cells(action_target)
 
@@ -57,6 +52,38 @@ func _build_plan_for_enemy(
 		"preview_cells": preview,
 		"target_mode": target_mode
 	}
+
+func _pick_target_player(enemy: Unit, player_units: Array[Unit]) -> Unit:
+	if enemy.archetype == Unit.Archetype.SNIPER:
+		return _find_farthest(enemy, player_units)
+	return _find_closest(enemy, player_units)
+
+func _pick_action_target(enemy: Unit, move_to: Vector2i, preferred_target: Vector2i, target_mode: String) -> Vector2i:
+	if enemy.action == null:
+		return move_to
+
+	var candidates: Array[Vector2i] = []
+	var original_cell := enemy.cell
+	enemy.cell = move_to
+	var raw_targets := enemy.action.get_target_cells(enemy, grid, unit_manager)
+	for c in raw_targets:
+		if grid.is_in_bounds(c):
+			candidates.append(c)
+	enemy.cell = original_cell
+
+	if candidates.is_empty():
+		if target_mode == "objective":
+			return preferred_target
+		return move_to
+
+	var best := candidates[0]
+	var best_dist := best.distance_to(preferred_target)
+	for c in candidates:
+		var d := c.distance_to(preferred_target)
+		if d < best_dist:
+			best = c
+			best_dist = d
+	return best
 
 func _should_focus_objective(
 	enemy: Unit,
@@ -116,6 +143,18 @@ func _find_closest(from_unit: Unit, units: Array[Unit]) -> Unit:
 			continue
 		var d := from_unit.cell.distance_to(u.cell)
 		if d < best_dist:
+			best = u
+			best_dist = d
+	return best
+
+func _find_farthest(from_unit: Unit, units: Array[Unit]) -> Unit:
+	var best := units[0]
+	var best_dist := from_unit.cell.distance_to(best.cell)
+	for u in units:
+		if u == null or not is_instance_valid(u) or u.is_dead():
+			continue
+		var d := from_unit.cell.distance_to(u.cell)
+		if d > best_dist:
 			best = u
 			best_dist = d
 	return best

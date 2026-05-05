@@ -7,6 +7,7 @@ signal turn_started(turn_index: int, phase: TurnPhase)
 signal command_points_changed(current: int, max: int)
 signal threat_changed(level: int)
 signal battle_failed(reason: String)
+signal battle_won(reason: String)
 signal weave_changed(uses_left: int, uses_max: int)
 signal intent_weaved(from_cell: Vector2i, to_cell: Vector2i)
 
@@ -52,6 +53,7 @@ func start_battle():
 	phase = TurnPhase.PLAYER_TURN
 	phase_changed.emit(phase)
 	turn_started.emit(turn_index, phase)
+	_evaluate_win_condition()
 
 func can_accept_player_input() -> bool:
 	return phase == TurnPhase.PLAYER_TURN and not is_battle_over
@@ -231,6 +233,7 @@ func _execute_enemy_turn():
 
 	unit_manager.cleanup_dead_units()
 	_sanitize_enemy_plans()
+	_evaluate_win_condition()
 
 func _reset_player_flags():
 	for unit in unit_manager.get_units_by_team(Unit.Team.PLAYER):
@@ -294,6 +297,17 @@ func _on_objective_destroyed(_cell: Vector2i):
 	is_battle_over = true
 	phase_changed.emit(phase)
 	battle_failed.emit("Objective destroyed")
+
+func evaluate_battle_state():
+	_evaluate_win_condition()
+
+func _evaluate_win_condition():
+	if is_battle_over:
+		return
+	if unit_manager.get_units_by_team(Unit.Team.ENEMY).is_empty():
+		is_battle_over = true
+		phase_changed.emit(phase)
+		battle_won.emit("All enemies eliminated")
 
 func grid_safe_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	var path := battle_manager.grid.find_path(from, to)

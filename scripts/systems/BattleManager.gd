@@ -124,6 +124,8 @@ func try_action_command(cell: Vector2i):
 	effect_resolver.resolve_effects(effects)
 	selected_unit.has_acted_this_turn = true
 	unit_manager.cleanup_dead_units()
+	if turn_manager != null:
+		turn_manager.evaluate_battle_state()
 
 	var finished_unit := selected_unit
 	unselect()
