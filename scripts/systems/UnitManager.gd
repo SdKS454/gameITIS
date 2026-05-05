@@ -91,11 +91,21 @@ func remove_unit(unit: Unit):
 		return
 	occupied.erase(unit.cell)
 	units.erase(unit)
-	unit.queue_free()
 	units_changed.emit()
 	grid.refresh_ownership_visuals()
+	_play_unit_death_and_free(unit)
 
 func cleanup_dead_units():
 	for unit in units.duplicate():
 		if unit.is_dead():
 			remove_unit(unit)
+
+func _play_unit_death_and_free(unit: Unit):
+	if unit == null or not is_instance_valid(unit):
+		return
+	unit.death_animation_finished.connect(_on_unit_death_animation_finished.bind(unit), CONNECT_ONE_SHOT)
+	unit.play_death_animation()
+
+func _on_unit_death_animation_finished(_animated_unit: Unit, queued_unit: Unit):
+	if queued_unit != null and is_instance_valid(queued_unit):
+		queued_unit.queue_free()

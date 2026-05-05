@@ -77,6 +77,7 @@ func _init():
 	_assert(obj_state["hp"] > 0, "Objective should have positive HP")
 	var power_grid_state := environment_manager.get_power_grid_state()
 	_assert(power_grid_state["max_hp"] > obj_state["max_hp"], "Power grid max HP should include additional buildings")
+	_assert(battle_hud.get_node("Root/TopBar/TopVBox/PowerGridLabel").text.find("Power Grid:") == 0, "HUD should display power grid HP")
 
 	# --- Phase 2: enemy can target objective when threat is high enough.
 	var players_now := unit_manager.get_units_by_team(Unit.Team.PLAYER)
@@ -132,6 +133,7 @@ func _init():
 	])
 	await process_frame
 	_assert(environment_manager.power_grid_hp == grid_hp_before - 1, "Damaging grid building should reduce shared power grid HP")
+	_assert(battle_hud.get_node("Root/TopBar/TopVBox/PowerGridLabel").text.find(str(environment_manager.power_grid_hp)) >= 0, "HUD power grid label should update after damage")
 
 	# --- Phase 2: objective takes damage and mission fails on destruction.
 	var objective_hp_before := environment_manager.objective_hp

@@ -4,6 +4,7 @@ class_name Unit
 signal move_finished(final_cell: Vector2i)
 signal health_changed(unit: Unit, old_hp: int, new_hp: int)
 signal died(unit: Unit)
+signal death_animation_finished(unit: Unit)
 
 enum Team {
 	PLAYER,
@@ -33,6 +34,8 @@ var hp: int = max_hp
 var has_moved_this_turn := false
 var has_acted_this_turn := false
 var _hit_flash_tween: Tween
+var _attack_tween: Tween
+var _death_tween: Tween
 
 func _ready():
 	hp = max_hp
@@ -109,6 +112,24 @@ func is_dead() -> bool:
 func get_team_label() -> String:
 	return "ALLY" if team == Team.PLAYER else "ENEMY"
 
+func play_attack_lunge(target_cell: Vector2i):
+	if is_moving:
+		return
+	if _death_tween != null:
+		return
+	if grid == null:
+		return
+	var tile := grid.get_tile(target_cell)
+	if tile == null:
+		return
+	if _attack_tween != null:
+		_attack_tween.kill()
+	var start_pos := position
+	var dir := (tile.position - start_pos).normalized()
+	var lunge_pos := start_pos + dir * 10.0
+	_attack_tween = create_tween()
+	_attack_tween.tween_property(self, "position", lunge_pos, 0.06)
+	_attack_tween.tween_property(self, "position", start_pos, 0.09)
 
 func play_hit_flash():
 	var sprite: Sprite2D = $Visual/Sprite2D
@@ -122,3 +143,21 @@ func play_hit_flash():
 	_hit_flash_tween = create_tween()
 	_hit_flash_tween.tween_property(sprite, "modulate", Color(1.55, 1.55, 1.55, 1), 0.08)
 	_hit_flash_tween.tween_property(sprite, "modulate", Color(1, 1, 1, 1), 0.16)
+
+func play_death_animation():
+	if _death_tween != null:
+		return
+	var sprite: Sprite2D = $Visual/Sprite2D
+	if sprite == null:
+		death_animation_finished.emit(self)
+		return
+	if _attack_tween != null:
+		_attack_tween.kill()
+	if _hit_flash_tween != null:
+		_hit_flash_tween.kill()
+	_death_tween = create_tween()
+	_death_tween.tween_property(sprite, "modulate:a", 0.0, 0.16)
+	_death_tween.parallel().tween_property($Visual, "scale", Vector2(0.7, 0.7), 0.16)
+	_death_tween.finished.connect(func():
+		death_animation_finished.emit(self)
+	)

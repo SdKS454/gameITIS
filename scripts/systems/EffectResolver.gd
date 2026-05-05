@@ -30,6 +30,8 @@ func _resolve_damage(effect: Dictionary):
 	var attacker: Unit = effect.get("source", null)
 	if amount <= 0:
 		return
+	if attacker != null and is_instance_valid(attacker) and not attacker.is_dead():
+		attacker.play_attack_lunge(cell)
 
 	var target := unit_manager.get_unit_at(cell)
 	if target != null:

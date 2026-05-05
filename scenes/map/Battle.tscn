@@ -165,6 +165,10 @@ text = "Threat: 0"
 layout_mode = 2
 text = "Objective (0, 0) HP: 0/0"
 
+[node name="PowerGridLabel" type="Label" parent="BattleHUD/Root/TopBar/TopVBox"]
+layout_mode = 2
+text = "Power Grid: 0/0"
+
 [node name="HPLabel" type="RichTextLabel" parent="BattleHUD/Root/TopBar/TopVBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(320, 120)

@@ -16,6 +16,7 @@ class_name BattleHUD
 @onready var weave_preview_label: Label = $Root/TopBar/TopVBox/WeavePreviewLabel
 @onready var threat_label: Label = $Root/TopBar/TopVBox/ThreatLabel
 @onready var objective_label: Label = $Root/TopBar/TopVBox/ObjectiveLabel
+@onready var power_grid_label: Label = $Root/TopBar/TopVBox/PowerGridLabel
 @onready var hp_label: RichTextLabel = $Root/TopBar/TopVBox/HPLabel
 @onready var log_label: RichTextLabel = $Root/LogPanel/LogMargin/LogLabel
 @onready var fail_overlay: PanelContainer = $Root/FailOverlay
@@ -39,6 +40,7 @@ func _ready():
 	if environment_manager != null:
 		environment_manager.objective_updated.connect(_on_objective_updated)
 		environment_manager.objective_destroyed.connect(_on_objective_destroyed)
+		environment_manager.power_grid_updated.connect(_on_power_grid_updated)
 
 	if effect_resolver != null:
 		effect_resolver.damage_resolved.connect(_on_damage_resolved)
@@ -73,6 +75,8 @@ func _ready():
 	if environment_manager != null:
 		var obj := environment_manager.get_objective_state()
 		_on_objective_updated(obj["hp"], obj["max_hp"], obj["cell"])
+		var grid_state := environment_manager.get_power_grid_state()
+		_on_power_grid_updated(grid_state["hp"], grid_state["max_hp"])
 	_append_log("Battle started")
 
 func _process(_delta):
@@ -121,6 +125,9 @@ func _on_threat_changed(level: int):
 
 func _on_objective_updated(current_hp: int, max_hp: int, cell: Vector2i):
 	objective_label.text = "Objective %s HP: %d/%d" % [str(cell), current_hp, max_hp]
+
+func _on_power_grid_updated(current_hp: int, max_hp: int):
+	power_grid_label.text = "Power Grid: %d/%d" % [current_hp, max_hp]
 
 func _on_turn_started(turn_idx: int, phase: TurnManager.TurnPhase):
 	_append_log("Turn %d -> %s" % [turn_idx, _phase_text(phase)])
