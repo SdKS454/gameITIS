@@ -59,6 +59,11 @@ func _resolve_push(effect: Dictionary) -> Array[Dictionary]:
 			result.append({"type": "damage", "target_cell": target.cell, "amount": 1, "source": effect.get("source", null)})
 			break
 
+		if environment_manager != null and environment_manager.is_environment_at(next_cell):
+			result.append({"type": "damage", "target_cell": target.cell, "amount": 1, "source": effect.get("source", null)})
+			result.append({"type": "damage", "target_cell": next_cell, "amount": 1, "source": effect.get("source", null)})
+			break
+
 		if unit_manager.is_occupied(next_cell):
 			result.append({"type": "damage", "target_cell": target.cell, "amount": 1, "source": effect.get("source", null)})
 			result.append({"type": "damage", "target_cell": next_cell, "amount": 1, "source": effect.get("source", null)})
@@ -68,8 +73,5 @@ func _resolve_push(effect: Dictionary) -> Array[Dictionary]:
 		target.set_cell(next_cell)
 		unit_manager.on_unit_moved(target, old_cell, next_cell)
 		push_resolved.emit(target, old_cell, next_cell)
-
-		if environment_manager != null and environment_manager.is_environment_at(next_cell):
-			result.append({"type": "damage", "target_cell": next_cell, "amount": 1, "source": effect.get("source", null)})
 
 	return result

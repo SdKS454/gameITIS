@@ -107,6 +107,20 @@ func _init():
 	_assert(turn_manager.weave_uses_left == weave_before - 1, "Weave use should be consumed")
 	turn_manager.weave_uses_left = 0
 	_assert(turn_manager.get_weave_unavailable_reason() != "", "Unavailable weave reason should be provided")
+	turn_manager.weave_uses_left = weave_before - 1
+
+	# --- Push collision: unit into objective should damage both the unit and objective.
+	var push_enemy: Unit = enemies_now[0]
+	_relocate_unit(unit_manager, push_enemy, environment_manager.objective_cell + Vector2i(-2, 0))
+	_relocate_unit(unit_manager, far_player, environment_manager.objective_cell + Vector2i(-3, 0))
+	battle_manager.select_unit(far_player)
+	var objective_hp_before_push := environment_manager.objective_hp
+	var enemy_hp_before_push := push_enemy.hp
+	battle_manager.try_action_command(push_enemy.cell)
+	await process_frame
+	_assert(push_enemy.cell == environment_manager.objective_cell + Vector2i(-2, 0), "Pushed enemy should not move into objective cell")
+	_assert(push_enemy.hp == enemy_hp_before_push - 2, "Push into objective should apply base hit + collision damage to enemy")
+	_assert(environment_manager.objective_hp == objective_hp_before_push - 1, "Push collision should damage objective")
 
 	# --- Phase 2: objective takes damage and mission fails on destruction.
 	var objective_hp_before := environment_manager.objective_hp
