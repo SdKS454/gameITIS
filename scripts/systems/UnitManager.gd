@@ -12,6 +12,10 @@ var units: Array[Unit] = []
 var occupied: Dictionary = {}
 
 func _ready():
+	setup_default_battlefield()
+
+func setup_default_battlefield():
+	clear_all_units()
 	spawn_unit(Vector2i(3, 3), Unit.Team.PLAYER, Unit.Archetype.STRIKER)
 	spawn_unit(Vector2i(2, 4), Unit.Team.PLAYER, Unit.Archetype.GUARDIAN)
 	spawn_unit(Vector2i(4, 2), Unit.Team.PLAYER, Unit.Archetype.ARTILLERY)
@@ -19,6 +23,16 @@ func _ready():
 	spawn_unit(Vector2i(6, 8), Unit.Team.ENEMY, Unit.Archetype.RAIDER)
 	spawn_unit(Vector2i(8, 6), Unit.Team.ENEMY, Unit.Archetype.SNIPER)
 	grid.refresh_ownership_visuals()
+
+func clear_all_units():
+	for unit in units.duplicate():
+		if unit != null and is_instance_valid(unit):
+			unit.queue_free()
+	units.clear()
+	occupied.clear()
+	units_changed.emit()
+	if grid != null:
+		grid.refresh_ownership_visuals()
 
 func is_occupied(cell: Vector2i) -> bool:
 	return occupied.has(cell)
@@ -46,6 +60,7 @@ func spawn_unit(cell: Vector2i, team: Unit.Team = Unit.Team.PLAYER, archetype: U
 	if unit.action == null:
 		unit.action = _default_action_for(team, archetype)
 	_apply_archetype_stats(unit)
+	unit.hp = unit.max_hp
 	unit.set_cell(cell)
 
 	units_parent.add_child(unit)
