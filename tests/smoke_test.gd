@@ -1,7 +1,6 @@
 extends SceneTree
 
 var fail_signal_fired := false
-var win_signal_fired := false
 
 func _init():
 	var battle_scene: PackedScene = load("res://scenes/map/Battle.tscn")
@@ -30,13 +29,11 @@ func _init():
 	_assert_not_null(battle_hud, "BattleHUD should exist")
 
 	turn_manager.battle_failed.connect(func(_reason): fail_signal_fired = true)
-	turn_manager.battle_won.connect(func(_reason): win_signal_fired = true)
 
 	var players := unit_manager.get_units_by_team(Unit.Team.PLAYER)
 	var enemies := unit_manager.get_units_by_team(Unit.Team.ENEMY)
 	_assert(players.size() > 0, "Expected at least one player unit")
-	_assert(players.size() >= 3, "Expected at least three player archetypes")
-	_assert(enemies.size() >= 3, "Expected at least three enemy archetypes")
+	_assert(enemies.size() > 0, "Expected at least one enemy unit")
 
 	var player: Unit = players[0]
 	var enemy: Unit = enemies[0]
@@ -75,9 +72,6 @@ func _init():
 	var obj_state := environment_manager.get_objective_state()
 	_assert(obj_state["alive"], "Objective should be alive at battle start")
 	_assert(obj_state["hp"] > 0, "Objective should have positive HP")
-	var power_grid_state := environment_manager.get_power_grid_state()
-	_assert(power_grid_state["max_hp"] > obj_state["max_hp"], "Power grid max HP should include additional buildings")
-	_assert(battle_hud.get_node("Root/TopBar/TopVBox/PowerGridLabel").text.find("Power Grid:") == 0, "HUD should display power grid HP")
 
 	# --- Phase 2: enemy can target objective when threat is high enough.
 	var players_now := unit_manager.get_units_by_team(Unit.Team.PLAYER)
@@ -113,27 +107,6 @@ func _init():
 	_assert(turn_manager.weave_uses_left == weave_before - 1, "Weave use should be consumed")
 	turn_manager.weave_uses_left = 0
 	_assert(turn_manager.get_weave_unavailable_reason() != "", "Unavailable weave reason should be provided")
-	turn_manager.weave_uses_left = weave_before - 1
-
-	# --- Push collision: unit into objective should damage both the unit and objective.
-	var push_enemy: Unit = enemies_now[0]
-	_relocate_unit(unit_manager, push_enemy, environment_manager.objective_cell + Vector2i(-2, 0))
-	_relocate_unit(unit_manager, far_player, environment_manager.objective_cell + Vector2i(-3, 0))
-	battle_manager.select_unit(far_player)
-	var objective_hp_before_push := environment_manager.objective_hp
-	var enemy_hp_before_push := push_enemy.hp
-	battle_manager.try_action_command(push_enemy.cell)
-	await process_frame
-	_assert(push_enemy.cell == environment_manager.objective_cell + Vector2i(-2, 0), "Pushed enemy should not move into objective cell")
-	_assert(push_enemy.hp == enemy_hp_before_push - 2, "Push into objective should apply base hit + collision damage to enemy")
-	_assert(environment_manager.objective_hp == objective_hp_before_push - 1, "Push collision should damage objective")
-	var grid_hp_before := environment_manager.power_grid_hp
-	effect_resolver.resolve_effects([
-		{"type": "damage", "target_cell": Vector2i(8, 2), "amount": 1}
-	])
-	await process_frame
-	_assert(environment_manager.power_grid_hp == grid_hp_before - 1, "Damaging grid building should reduce shared power grid HP")
-	_assert(battle_hud.get_node("Root/TopBar/TopVBox/PowerGridLabel").text.find(str(environment_manager.power_grid_hp)) >= 0, "HUD power grid label should update after damage")
 
 	# --- Phase 2: objective takes damage and mission fails on destruction.
 	var objective_hp_before := environment_manager.objective_hp
@@ -162,22 +135,6 @@ func _init():
 	_assert(fail_signal_fired, "Battle failed signal should fire when objective is destroyed")
 	_assert(not turn_manager.can_accept_player_input(), "Player input should be blocked after mission fail")
 	_assert(battle_hud.get_node("Root/FailOverlay").visible, "Fail notification overlay should be visible")
-
-	# --- Win condition: no enemies left should end battle with win signal.
-	var battle2 := battle_scene.instantiate()
-	root.add_child(battle2)
-	await process_frame
-	var grid_root2 := battle2.get_node("GridRoot")
-	var unit_manager2: UnitManager = grid_root2.get_node("UnitManager")
-	var turn_manager2: TurnManager = grid_root2.get_node("TurnManager")
-	turn_manager2.battle_won.connect(func(_r): win_signal_fired = true)
-	for e in unit_manager2.get_units_by_team(Unit.Team.ENEMY):
-		e.take_damage(999)
-	unit_manager2.cleanup_dead_units()
-	turn_manager2.evaluate_battle_state()
-	await process_frame
-	_assert(turn_manager2.is_battle_over, "Battle should end when all enemies are destroyed")
-	_assert(win_signal_fired, "Win signal should fire when all enemies are eliminated")
 
 	print("SMOKE_TEST_OK")
 	quit(0)

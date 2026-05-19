@@ -13,8 +13,8 @@ func resolve_effects(effects: Array[Dictionary]):
 	var queue: Array[Dictionary] = effects.duplicate(true)
 
 	while not queue.is_empty():
-		var effect := queue.pop_front()
-		var type := effect.get("type", "")
+		var effect = queue.pop_front()
+		var type = effect.get("type", "")
 
 		match type:
 			"damage":

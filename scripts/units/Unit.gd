@@ -20,9 +20,33 @@ enum Archetype {
 	SNIPER
 }
 
+var unit_data = {
+	Team.PLAYER: {
+		"texture": preload("res://assets/sprites/units/TestUnit.png"),
+		"offset": Vector2(0, 0),
+		"scale": Vector2(1, 1)
+	},
+	Team.ENEMY: {
+		"texture": preload("res://assets/sprites/units/EnemyUnit.png"),
+		"offset": Vector2(10, 0),
+		"scale": Vector2(2, 2)
+	}
+}
+
+@onready var sprite: Sprite2D = $Visual/Sprite2D
+@export var visual_offset: Vector2 = Vector2.ZERO
+
+@export var team: Team = Team.PLAYER:
+	set(value):
+		if team == value:
+			return
+		team = value
+		
+		if is_inside_tree():
+			update_sprite()
+
 @export var move_range: int = 3
 @export var max_hp: int = 3
-@export var team: Team = Team.PLAYER
 @export var action: BaseAction
 @export var action_cost: int = 1
 @export var archetype: Archetype = Archetype.STRIKER
@@ -39,7 +63,11 @@ var _death_tween: Tween
 
 func _ready():
 	hp = max_hp
-	auto_adjust_visual()
+	sprite.centered = false
+	update_sprite()
+
+func _draw():
+	draw_circle(Vector2.ZERO, 3, Color.RED)
 
 func set_cell(new_cell: Vector2i):
 	cell = new_cell
@@ -55,13 +83,45 @@ func update_position():
 
 	position = tile.position
 
+func update_sprite():
+	var data = unit_data.get(team)
+	if data == null:
+		return
+
+	sprite.texture = data.texture
+	visual_offset = data.offset
+	$Visual.scale = data.scale
+	
+	var color = Color(0.0, 0.0, 0.0, 0.0)
+	match archetype:
+		Archetype.STRIKER:
+			color = Color(0.0, 0.533, 0.184, 1.0)
+		Archetype.GUARDIAN:
+			color = Color(0.373, 0.373, 0.373, 1.0)
+		Archetype.ARTILLERY:
+			color = Color(0.122, 0.358, 1.0, 1.0)
+		Archetype.BRUTE:
+			color = Color(0.917, 0.295, 0.099, 1.0)
+		Archetype.RAIDER:
+			color = Color(0.73, 0.595, 0.0, 1.0)
+		Archetype.SNIPER:
+			color = Color(0.888, 0.0, 0.478, 1.0)
+		
+		
+	sprite.modulate = color
+	
+	auto_adjust_visual()
+
 func auto_adjust_visual():
-	var sprite := $Visual/Sprite2D
 	if sprite.texture == null:
 		return
 
-	var height = sprite.texture.get_size().y
-	$Visual.position.y = -height / 2.0
+	var size = sprite.texture.get_size() * $Visual.scale
+	
+	$Visual.position = Vector2(
+		-size.x / 2.0,
+		-size.y
+	) + visual_offset
 
 func move_along_path(path: Array[Vector2i]):
 	if is_moving:

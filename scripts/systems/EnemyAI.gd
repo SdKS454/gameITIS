@@ -114,7 +114,7 @@ func _pick_move_cell(enemy: Unit, target_cell: Vector2i, stop_before_target: boo
 	if path.size() <= 1:
 		return enemy.cell
 
-	var max_step := min(enemy.move_range, path.size() - 1)
+	var max_step = min(enemy.move_range, path.size() - 1)
 	if stop_before_target:
 		max_step = min(max_step, path.size() - 2)
 	if max_step <= 0:

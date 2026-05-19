@@ -9,6 +9,7 @@ func show_enemy_intents(plans: Array[Dictionary]):
 		for c in plan.get("preview_cells", []):
 			if c not in cells:
 				cells.append(c)
+	grid.clear_intents()
 	grid.show_intents(cells)
 
 func clear():

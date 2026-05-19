@@ -115,7 +115,7 @@ func try_action_command(cell: Vector2i):
 	if effects.is_empty():
 		return
 
-	var action_cost := max(0, selected_unit.action_cost)
+	var action_cost = max(0, selected_unit.action_cost)
 	if turn_manager != null and not turn_manager.try_spend_cp(action_cost):
 		player_action_denied.emit(selected_unit, "Not enough CP")
 		return

@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://bhyghe0pwuyrv"]
+
+[sub_resource type="GDScript" id="GDScript_j2pxx"]
+script/source = "extends Node
+class_name PathPreview
+
+@export var grid: Grid
+@export var movement_system: MovementSystem
+
+var current_unit: Unit = null
+var current_path: Array[Vector2i] = []
+
+func set_unit(unit: Unit):
+	current_unit = unit
+
+func update_preview(target_cell: Vector2i):
+	if current_unit == null:
+		return
+
+	if not movement_system.can_move_to(current_unit, target_cell):
+		return
+
+	current_path = grid.find_path(current_unit.cell, target_cell)
+
+	apply_preview(current_path)
+
+func clear_preview():
+	current_path.clear()
+	grid.clear_preview_only_path()
+
+func apply_preview(path: Array[Vector2i]):
+	grid.clear_preview_only_path()
+	
+	for i in range(path.size()):
+		var cell = path[i]
+
+		if i == path.size() - 1:
+			grid.set_preview(cell, Grid.PreviewType.TARGET)
+		else:
+			grid.set_preview(cell, Grid.PreviewType.PATH)
+"
+
+[node name="PathPreview" type="Node" unique_id=1898875501]
+script = SubResource("GDScript_j2pxx")
