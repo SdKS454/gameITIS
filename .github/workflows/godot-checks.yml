@@ -1,0 +1,21 @@
+name: Godot Checks
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    container: barichello/godot-ci:4.2.2
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Headless project open
+        run: godot --headless --path . --quit
+
+      - name: Smoke test
+        run: godot --headless --path . --script res://tests/smoke_test.gd
