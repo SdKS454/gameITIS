@@ -5,14 +5,22 @@ const MAIN_MENU := "res://scenes/ui/MainMenu.tscn"
 const BATTLE := "res://scenes/map/Battle.tscn"
 const RESULTS := "res://scenes/ui/Results.tscn"
 
-static func go_to(scene_path: String):
-	Engine.get_main_loop().current_scene.get_tree().change_scene_to_file(scene_path)
+var is_transitioning: bool = false
 
-static func to_main_menu():
+func go_to(scene_path: String):
+	if is_transitioning:
+		return
+	is_transitioning = true
+	var tree := Engine.get_main_loop().current_scene.get_tree()
+	tree.change_scene_to_file(scene_path)
+	await tree.process_frame
+	is_transitioning = false
+
+func to_main_menu():
 	go_to(MAIN_MENU)
 
-static func to_battle():
+func to_battle():
 	go_to(BATTLE)
 
-static func to_results():
+func to_results():
 	go_to(RESULTS)

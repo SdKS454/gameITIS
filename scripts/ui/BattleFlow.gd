@@ -3,6 +3,7 @@ extends Node
 @export var turn_manager: TurnManager
 @export var grid_root: GridRoot
 @export var transition_layer: CanvasItem
+var _finish_started := false
 
 func _ready():
 	var save_data := SaveManager.load_savegame()
@@ -12,6 +13,9 @@ func _ready():
 	turn_manager.battle_failed.connect(func(reason): _finish(false, reason, mission_id))
 
 func _finish(won: bool, reason: String, mission_id: int):
+	if _finish_started:
+		return
+	_finish_started = true
 	if transition_layer != null:
 		transition_layer.visible = true
 		var t := create_tween()
