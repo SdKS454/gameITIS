@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://dcgi0eoxebv0w"]
+
+[ext_resource type="Script" uid="uid://b6gge7ldgqmna" path="res://scripts/map/Grid.gd" id="1_x7s7k"]
+[ext_resource type="PackedScene" uid="uid://cu3emx0rkmeif" path="res://scenes/map/Tile.tscn" id="2_krmnp"]
+[ext_resource type="Script" uid="uid://f4q25fkj34ic" path="res://scripts/utils/IsoConfig.gd" id="3_ryfx5"]
+
+[sub_resource type="Resource" id="Resource_ryfx5"]
+script = ExtResource("3_ryfx5")
+metadata/_custom_type_script = "uid://f4q25fkj34ic"
+
+[node name="Grid" type="Node2D" unique_id=269519220]
+script = ExtResource("1_x7s7k")
+tile_scene = ExtResource("2_krmnp")
+iso_config = SubResource("Resource_ryfx5")

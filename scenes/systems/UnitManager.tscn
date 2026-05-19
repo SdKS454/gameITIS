@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://dllgqhansefun"]
+
+[ext_resource type="Script" uid="uid://djl0e41ycsgvx" path="res://scripts/systems/UnitManager.gd" id="1_pd6yv"]
+[ext_resource type="PackedScene" uid="uid://bjjdl7mbr7hbx" path="res://scenes/units/Unit.tscn" id="2_u4v2a"]
+
+[node name="UnitManager" type="Node" unique_id=188568835]
+script = ExtResource("1_pd6yv")
+unit_scene = ExtResource("2_u4v2a")

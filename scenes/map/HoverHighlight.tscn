@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://fjfypem676ux"]
+
+[ext_resource type="Texture2D" uid="uid://7nuv5ng7eu3g" path="res://assets/sprites/tiles/tile_128x64.png" id="1_coe3v"]
+
+[node name="HoverHighlight" type="Node2D" unique_id=1336704194]
+z_index = 100
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=459419804]
+texture = ExtResource("1_coe3v")
