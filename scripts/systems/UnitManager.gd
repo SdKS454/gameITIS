@@ -11,15 +11,6 @@ signal unit_moved(unit: Unit, old_cell: Vector2i, new_cell: Vector2i)
 var units: Array[Unit] = []
 var occupied: Dictionary = {}
 
-const ARCHETYPE_BASE := {
-	Unit.Archetype.STRIKER: {"hp": 3, "move": 3},
-	Unit.Archetype.GUARDIAN: {"hp": 4, "move": 2},
-	Unit.Archetype.ARTILLERY: {"hp": 2, "move": 2},
-	Unit.Archetype.BRUTE: {"hp": 4, "move": 2},
-	Unit.Archetype.RAIDER: {"hp": 3, "move": 4},
-	Unit.Archetype.SNIPER: {"hp": 2, "move": 2}
-}
-
 var enemy_hp_multiplier: float = 1.0
 
 func _ready():
@@ -74,6 +65,8 @@ func spawn_unit(cell: Vector2i, team: Unit.Team = Unit.Team.PLAYER, archetype: U
 	unit.archetype = archetype
 	if unit.action == null:
 		unit.action = _default_action_for(team, archetype)
+	BalanceTable.apply_action_balance(unit.action)
+	unit.action_cost = int(BalanceTable.ACTION_COST.get(archetype, 1))
 	_apply_archetype_stats(unit)
 	unit.hp = unit.max_hp
 	unit.set_cell(cell)
@@ -93,7 +86,7 @@ func _default_action_for(team: Unit.Team, archetype: Unit.Archetype) -> BaseActi
 			return MeleeAttackAction.new()
 
 func _apply_archetype_stats(unit: Unit):
-	var base: Dictionary = ARCHETYPE_BASE.get(unit.archetype, {"hp": 3, "move": 3})
+	var base: Dictionary = BalanceTable.UNIT_STATS.get(unit.archetype, {"hp": 3, "move": 3})
 	var hp := int(base.get("hp", 3))
 	if unit.team == Unit.Team.ENEMY:
 		hp = int(round(hp * enemy_hp_multiplier))

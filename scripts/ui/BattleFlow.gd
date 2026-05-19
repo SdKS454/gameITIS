@@ -26,3 +26,18 @@ func _finish(won: bool, reason: String, mission_id: int):
 	if won and mission_id < SaveManager.MAX_MISSION_ID:
 		SaveManager.save_savegame(mission_id + 1)
 	SceneFlow.to_results()
+
+func _process(_delta):
+	if turn_manager == null or turn_manager.is_battle_over:
+		return
+	if not turn_manager.is_player_turn():
+		return
+	if turn_manager.cp_current > 0:
+		return
+	var has_actionable := false
+	for unit in turn_manager.unit_manager.get_units_by_team(Unit.Team.PLAYER):
+		if unit != null and is_instance_valid(unit) and unit.can_act_this_turn():
+			has_actionable = true
+			break
+	if not has_actionable:
+		turn_manager.end_player_turn()

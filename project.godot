@@ -36,3 +36,4 @@ renderer/rendering_method.mobile="gl_compatibility"
 
 SaveManager="*res://scripts/systems/SaveManager.gd"
 SceneFlow="*res://scripts/ui/SceneFlow.gd"
+BalanceTable="*res://scripts/utils/BalanceTable.gd"

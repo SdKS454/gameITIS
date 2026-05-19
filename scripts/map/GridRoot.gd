@@ -104,23 +104,24 @@ func center_grid() -> void:
 func apply_mission_preset(mission_id: int):
 	mission_id = SaveManager.normalize_mission_id(mission_id)
 	var cfg: Dictionary = MISSION_CONFIG.get(mission_id, MISSION_CONFIG[1])
+	var modifiers: Dictionary = BalanceTable.MISSION_MODIFIERS.get(mission_id, BalanceTable.MISSION_MODIFIERS[1])
 	var unit_manager: UnitManager = get_node("UnitManager")
 	var turn_manager: TurnManager = get_node("TurnManager")
 	var environment_manager: EnvironmentManager = get_node("EnvironmentManager")
 	unit_manager.clear_all_units()
 	unit_manager.configure_mission_balance(cfg)
 	environment_manager.objective_cell = cfg.get("objective_cell", Vector2i(8, 1))
-	environment_manager.objective_max_hp = int(cfg.get("objective_hp", 6))
-	turn_manager.cp_max = int(cfg.get("cp_max", 3))
-	turn_manager.threat_growth_per_turn = int(cfg.get("threat_growth", 1))
-	turn_manager.threat_objective_focus_start = int(cfg.get("threat_focus", 2))
-	turn_manager.weave_uses_per_turn = int(cfg.get("weave_uses", 1))
+	environment_manager.objective_max_hp = int(modifiers.get("objective_hp", 6))
+	turn_manager.cp_max = int(modifiers.get("cp_max", 3))
+	turn_manager.threat_growth_per_turn = int(modifiers.get("threat_growth", 1))
+	turn_manager.threat_objective_focus_start = int(modifiers.get("threat_focus", 2))
+	turn_manager.weave_uses_per_turn = int(modifiers.get("weave_uses", 1))
 	for spawn in cfg.get("spawns", []):
 		unit_manager.spawn_unit(spawn.get("cell", Vector2i.ZERO), int(spawn.get("team", Unit.Team.PLAYER)), int(spawn.get("arch", Unit.Archetype.STRIKER)))
 
 	environment_manager.reset_state()
 	turn_manager.turn_index = 1
 	if mission_id == 5:
-		turn_manager.threat_growth_per_turn = [1, 2, 3, 2, 1][randi() % 5]
+		turn_manager.threat_growth_per_turn = [1, 2, 3, 2, int(modifiers.get("threat_growth", 2))][randi() % 5]
 	turn_manager.start_battle()
 	grid.refresh_ownership_visuals()
