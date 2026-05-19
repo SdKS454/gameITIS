@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://bjjdl7mbr7hbx"]
+
+[ext_resource type="Script" uid="uid://bvr76gmiq4643" path="res://scripts/units/Unit.gd" id="1_e3b5r"]
+[ext_resource type="Texture2D" uid="uid://qk2jan01ound" path="res://assets/sprites/units/TestUnit.png" id="2_gocqw"]
+
+[node name="Unit" type="Node2D" unique_id=2057550720]
+z_index = 1000
+script = ExtResource("1_e3b5r")
+
+[node name="Visual" type="Node2D" parent="." unique_id=1910740710]
+
+[node name="Sprite2D" type="Sprite2D" parent="Visual" unique_id=232849256]
+texture = ExtResource("2_gocqw")
