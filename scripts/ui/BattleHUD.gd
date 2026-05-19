@@ -79,8 +79,6 @@ func _ready():
 		_on_power_grid_updated(grid_state["hp"], grid_state["max_hp"])
 	_append_log("Battle started")
 
-func _process(_delta):
-	_refresh_hp_panel()
 
 func _refresh_hp_panel():
 	if unit_manager == null:

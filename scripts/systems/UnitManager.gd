@@ -11,7 +11,14 @@ signal unit_moved(unit: Unit, old_cell: Vector2i, new_cell: Vector2i)
 var units: Array[Unit] = []
 var occupied: Dictionary = {}
 
+var enemy_hp_multiplier: float = 1.0
+
 func _ready():
+	setup_default_battlefield()
+
+func setup_default_battlefield():
+	clear_all_units()
+	enemy_hp_multiplier = 1.0
 	spawn_unit(Vector2i(3, 3), Unit.Team.PLAYER, Unit.Archetype.STRIKER)
 	spawn_unit(Vector2i(2, 4), Unit.Team.PLAYER, Unit.Archetype.GUARDIAN)
 	spawn_unit(Vector2i(4, 2), Unit.Team.PLAYER, Unit.Archetype.ARTILLERY)
@@ -19,6 +26,19 @@ func _ready():
 	spawn_unit(Vector2i(6, 8), Unit.Team.ENEMY, Unit.Archetype.RAIDER)
 	spawn_unit(Vector2i(8, 6), Unit.Team.ENEMY, Unit.Archetype.SNIPER)
 	grid.refresh_ownership_visuals()
+
+func configure_mission_balance(modifiers: Dictionary):
+	enemy_hp_multiplier = max(0.5, float(modifiers.get("enemy_hp_multiplier", 1.0)))
+
+func clear_all_units():
+	for unit in units.duplicate():
+		if unit != null and is_instance_valid(unit):
+			unit.queue_free()
+	units.clear()
+	occupied.clear()
+	units_changed.emit()
+	if grid != null:
+		grid.refresh_ownership_visuals()
 
 func is_occupied(cell: Vector2i) -> bool:
 	return occupied.has(cell)
@@ -29,7 +49,7 @@ func get_unit_at(cell: Vector2i) -> Unit:
 func get_units_by_team(team: Unit.Team) -> Array[Unit]:
 	var result: Array[Unit] = []
 	for unit in units:
-		if unit.team == team and not unit.is_dead():
+		if unit != null and is_instance_valid(unit) and unit.team == team and not unit.is_dead():
 			result.append(unit)
 	return result
 
@@ -45,7 +65,10 @@ func spawn_unit(cell: Vector2i, team: Unit.Team = Unit.Team.PLAYER, archetype: U
 	unit.archetype = archetype
 	if unit.action == null:
 		unit.action = _default_action_for(team, archetype)
+	BalanceTable.apply_action_balance(unit.action)
+	unit.action_cost = int(BalanceTable.ACTION_COST.get(archetype, 1))
 	_apply_archetype_stats(unit)
+	unit.hp = unit.max_hp
 	unit.set_cell(cell)
 
 	units_parent.add_child(unit)
@@ -63,31 +86,23 @@ func _default_action_for(team: Unit.Team, archetype: Unit.Archetype) -> BaseActi
 			return MeleeAttackAction.new()
 
 func _apply_archetype_stats(unit: Unit):
-	match unit.archetype:
-		Unit.Archetype.GUARDIAN:
-			unit.max_hp = 4
-			unit.move_range = 2
-		Unit.Archetype.ARTILLERY:
-			unit.max_hp = 2
-			unit.move_range = 2
-		Unit.Archetype.BRUTE:
-			unit.max_hp = 4
-			unit.move_range = 2
-		Unit.Archetype.RAIDER:
-			unit.max_hp = 3
-			unit.move_range = 4
-		Unit.Archetype.SNIPER:
-			unit.max_hp = 2
-			unit.move_range = 2
+	var base: Dictionary = BalanceTable.UNIT_STATS.get(unit.archetype, {"hp": 3, "move": 3})
+	var hp := int(base.get("hp", 3))
+	if unit.team == Unit.Team.ENEMY:
+		hp = int(round(hp * enemy_hp_multiplier))
+	unit.max_hp = max(1, hp)
+	unit.move_range = int(base.get("move", 3))
 
 func on_unit_moved(unit: Unit, old_cell: Vector2i, new_cell: Vector2i):
+	if unit == null or not is_instance_valid(unit):
+		return
 	occupied.erase(old_cell)
 	occupied[new_cell] = unit
 	unit_moved.emit(unit, old_cell, new_cell)
 	grid.refresh_ownership_visuals()
 
 func remove_unit(unit: Unit):
-	if unit == null:
+	if unit == null or not is_instance_valid(unit):
 		return
 	occupied.erase(unit.cell)
 	units.erase(unit)
@@ -97,7 +112,7 @@ func remove_unit(unit: Unit):
 
 func cleanup_dead_units():
 	for unit in units.duplicate():
-		if unit.is_dead():
+		if unit != null and is_instance_valid(unit) and unit.is_dead():
 			remove_unit(unit)
 
 func _play_unit_death_and_free(unit: Unit):

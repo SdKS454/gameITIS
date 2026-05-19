@@ -17,6 +17,10 @@ var power_grid_hp: int = 0
 var power_grid_max_hp: int = 0
 
 func _ready():
+	reset_state()
+
+func reset_state():
+	objects.clear()
 	_setup_default_grid_buildings()
 	objective_hp = objective_max_hp
 	_refresh_objective_marker()

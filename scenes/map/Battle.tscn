@@ -14,6 +14,7 @@
 [ext_resource type="Script" uid="uid://2qosdas8njw" path="res://scripts/systems/IntentVisualizer.gd" id="12_vis"]
 [ext_resource type="Script" uid="uid://3tgq7nydvekc" path="res://scripts/systems/EnvironmentManager.gd" id="13_env"]
 [ext_resource type="Script" uid="uid://41c5ty7mytuu" path="res://scripts/ui/BattleHUD.gd" id="14_hud"]
+[ext_resource type="Script" path="res://scripts/ui/BattleFlow.gd" id="16_flow"]
 [ext_resource type="Texture2D" uid="uid://gwsxhqpygben" path="res://assets/sprites/tiles/tile_128x64.png" id="15_objtex"]
 
 [node name="Battle" type="Node2D" unique_id=1435354891]
@@ -224,3 +225,17 @@ layout_mode = 2
 text = "MISSION FAILED"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Transition" type="ColorRect" parent="." unique_id=1500000001]
+visible = false
+color = Color(0, 0, 0, 1)
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="BattleFlow" type="Node" parent="." unique_id=1500000002 node_paths=PackedStringArray("turn_manager", "grid_root", "transition_layer")]
+script = ExtResource("16_flow")
+turn_manager = NodePath("GridRoot/TurnManager")
+grid_root = NodePath("GridRoot")
+transition_layer = NodePath("Transition")

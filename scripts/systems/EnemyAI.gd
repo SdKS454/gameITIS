@@ -35,8 +35,9 @@ func _build_plan_for_enemy(
 		target_mode = "objective"
 	elif not player_units.is_empty():
 		var target_player := _pick_target_player(enemy, player_units)
-		target_cell = target_player.cell
-		target_mode = "player"
+		if target_player != null:
+			target_cell = target_player.cell
+			target_mode = "player"
 
 	var stop_before_target := target_mode == "objective"
 	var move_to := _pick_move_cell(enemy, target_cell, stop_before_target)
@@ -54,9 +55,15 @@ func _build_plan_for_enemy(
 	}
 
 func _pick_target_player(enemy: Unit, player_units: Array[Unit]) -> Unit:
+	var valid_players: Array[Unit] = []
+	for u in player_units:
+		if u != null and is_instance_valid(u) and not u.is_dead():
+			valid_players.append(u)
+	if valid_players.is_empty():
+		return null
 	if enemy.archetype == Unit.Archetype.SNIPER:
-		return _find_farthest(enemy, player_units)
-	return _find_closest(enemy, player_units)
+		return _find_farthest(enemy, valid_players)
+	return _find_closest(enemy, valid_players)
 
 func _pick_action_target(enemy: Unit, move_to: Vector2i, preferred_target: Vector2i, target_mode: String) -> Vector2i:
 	if enemy.action == null:
